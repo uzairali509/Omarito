@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Omari.to</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/Codes/style.css">
+    <link rel="icon" href="/Public/Images/Logo.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            background: #0f0f0f;
+            color: white;
+            font-family: Poppins;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            padding: 20px 8%;
+        }
+
+        /* Tablet: 2 columns */
+        @media (max-width: 1024px) {
+            .video-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Mobile: 1 column */
+        @media (max-width: 600px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            position: relative;
+            background: linear-gradient(145deg, #1a1a1a, #141414);
+            border: 1px solid rgba(255, 159, 28, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: rgba(255, 159, 28, 0.3);
+            box-shadow: 0 14px 35px rgba(255, 159, 28, 0.25);
+        }
+
+        .card-thumb {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-thumb img {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            transition: transform .45s ease;
+        }
+
+        .card:hover .card-thumb img {
+            transform: scale(1.07);
+        }
+
+        .card-body {
+            padding: 12px 14px 14px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #f2f2f2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-creator {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #d4bf86;
+        }
+
+        .card-stats {
+            margin-top: 6px;
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #9a9a9a;
+        }
+
+        .duration-badge {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: .3px;
+        }
+
+        .type-badge {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            padding: 2px 9px;
+            border-radius: 6px;
+            background: rgba(255, 159, 28, 0.9);
+            color: #111;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        /* Hover stats overlay (real stored values, never fake) */
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 10, 10, 0.82);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 9px;
+            padding: 18px;
+            opacity: 0;
+            transition: opacity .3s ease;
+            pointer-events: none;
+        }
+
+        .card:hover .card-overlay {
+            opacity: 1;
+        }
+
+        .card-overlay .ov-title {
+            font-size: 13px;
+            color: #FF9F1C;
+            font-weight: 600;
+            letter-spacing: .4px;
+            margin-bottom: 4px;
+        }
+
+        .card-overlay .ov-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #ddd;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding-bottom: 5px;
+        }
+
+        .card-overlay .ov-row span:last-child {
+            color: #d4bf86;
+            font-weight: 500;
+        }
+
+        .card-overlay .ov-play {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 13px;
+            color: #FF9F1C;
+            font-weight: 600;
+        }
+
+        /* Touch devices have no hover: overlay stays hidden, tap opens the player */
+        @media (hover: none) {
+            .card:hover .card-overlay {
+                opacity: 0;
+            }
+
+            .card:hover {
+                transform: none;
+            }
+        }
+
+        .card img {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+        }
+
+        .video-section {
+            padding: 40px 8%;
+        }
+
+        .row-title {
+            font-family: "Playfair Display", serif;
+            font-size: 34px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 30px;
+            font-size: 18px;
+            color: #FF9F1C;
+        }
+
+        iframe {
+            width: 100%;
+            height: 480px;
+            border: none;
+            border-radius: 12px;
+        }
+
+        .videos-page {
+            margin-top: 120px;
+            padding-bottom: 100px;
+        }
+
+        /* TAB BUTTONS */
+        .tabs {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .tabs button {
+            padding: 10px 25px;
+            margin: 0 10px;
+            background: #1a1a1a;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .tabs button.active {
+            background: #FF9F1C;
+            color: black;
+            font-weight: bold;
+        }
+
+        /* TIKTOK SHORTS GRID */
+        .shorts-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 20px 5%;
+        }
+
+        /* Tablet: 2 columns */
+        @media (max-width: 1024px) {
+            .shorts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Mobile: 1 column */
+        @media (max-width: 600px) {
+            .shorts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .shorts-card iframe {
+            height: 550px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="top-navbar">
+        <div class="logo">
+            <a href="http://localhost:3000/">
+                <img src="/Public/Images/Logo.png" width="50">
+                <span class="brand-name">omari<span class="dot">.</span>to</span>
+            </a>
+        </div>
+
+        <ul class="nav-links">
+            <a href="/Codes/Login.html" id="loginLink" style="display: flex;">
+                <li>Login</li>
+            </a>
+            <a href="/Codes/About.html">
+                <li>About</li>
+            </a>
+            <li>Favorite</li>
+            <div class="nav-profile-toggle" id="navProfileBox" style="display: none;" onclick="toggleProfilePanel()">
+                <img id="navProfileImg" src="/Public/Images/default-user.png">
+                <span id="navUserName"></span>
+            </div>
+        </ul>
+    </nav>
+
+    <div class="electric-cursor"></div>
+    <canvas id="lightningCanvas"></canvas>
+
+    <div class="side-buttons">
+        <a href="https://www.tiktok.com/@omari.to/live?lang=en" target="_blank"><button class="side-btn">Tikok
+                Live</button></a>
+        <a
+            onclick="openJourney('https://www.tiktok.com/@omari.to','Join the Official Community','Now click and join the group of Omari.to news and stay connected with the world.')"><button
+                class="side-btn">Join Group</button></a>
+    </div>
+
+    <nav class="bottom-navbar">
+        <div class="menu-toggle" id="menuToggle">☰</div>
+        <div class="menu" id="menu">
+            <ul class="menu-links" id="mainMenu">
+                <li class="active">Omarito.World</li>
+                <li>Omarito.Wow</li>
+                <li>Omarito.Chef</li>
+                <li id="charactersBtn">Characters →</li>
+                <li id="yearBtn">Year →</li>
+                <li id="eventBtn">Special Events →</li>
+                <li id="emailBtn">Get Email →</li>
+                <li id="locationBtn">Get Destination →</li>
+                <li id="visitBtn">Visited Places →</li>
+                <a href="/Codes/About.html">
+                    <li>More with us →</li>
+                </a>
+            </ul>
+            <div class="social-links">
+                <a id="tiktokBtn">TikTok</a>
+                <a href="https://youtube.com/@Omari_to" target="_blank">Youtube</a>
+                <a href="https://www.instagram.com/omari.too" target="_blank">Instagram</a>
+                <a href="https://www.facebook.com/omar.aliev.2024/" target="_blank">Facebook</a>
+                <a href="https://www.threads.com/@omari.too" target="_blank">Threads</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- PROFILE PANEL -->
+    <section class="profile-panel" id="profilePanel" style="display: none;">
+        <h3 id="userEmail"></h3>
+        <div class="panel-profile-box">
+            <img id="panelProfileImg" src="/Public/Images/default-user.png">
+        </div>
+        <div class="panel-logindata">
+            <p><strong>Name:</strong> <span id="userName"></span></p>
+            <p><strong>Age:</strong> <span id="userAge"></span></p>
+            <p><strong>Date:</strong> <span id="userDate"></span></p>
+        </div>
+        <div class="panel-actions">
+            <button type="button" id="logoutBtn">LogOut</button>
+            <button type="button" id="deleteAccBtn">Delete Account</button>
+            <a href="/Codes/settings.html"><button type="button" class="settings-btn">Change Something Else</button></a>
+        </div>
+    </section>
+
+    <div id="connectionStatus" class="status-bar online">
+        🔴 Offline
+    </div>
+
+    <div id="loader">
+        <img src="/Public/Images/Logo.png" class="spinner">
+    </div>
+
+    <!-- VIDEOS PAGE CONTENT -->
+    <section class="videos-page">
+        <h1 id="pageTitle">Loading...</h1>
+
+        <div class="tabs">
+            <button id="videosBtn" class="active" onclick="showVideos(event)">Videos</button>
+            <button id="shortsBtn" onclick="showShorts(event)">Shorts</button>
+        </div>
+
+        <div class="video-section" id="videosSection">
+            <div class="row-title">Latest Videos</div>
+            <div id="videoGrid" class="video-grid">
+                <!-- <iframe src="https://widget.tagembed.com/328275?website=1" allow="fullscreen"
+                    style="width:fit-content;height:fit-content;overflow:auto;border:none;"></iframe> -->
+            </div>
+
+
+        </div>
+
+        <div class="video-section" id="shortsSection" style="display: none;">
+            <div class="row-title">TikTok Shorts</div>
+            <div id="shortsGrid" class="shorts-grid"></div>
+            <div id="scrollSentinel" style="height: 1px; margin: 20px 0;"></div>
+            <div id="shortsLoader" class="loader">Loading TikTok Videos...</div>
+        </div>
+
+    </section>
+
+    <div id="journeyOverlay" class="journey-overlay">
+        <div class="journey-text">
+            <h2 id="overlayTitle"></h2>
+            <p id="overlayDesc"></p>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- script.js declares the single shared API_BASE and wires the menu;
+         it MUST load before the inline config block above so that block
+         can reuse API_BASE without redeclaring it. -->
+    <script src="/Codes/script.js"></script>
+
+    <script>
+        // ==================== CONFIG ====================
+        const params = new URLSearchParams(window.location.search);
+
+        // Official playlist ID → display name (for page title)
+        const PLAYLIST_ID_TO_NAME = {
+            "7433667529204828933": "OMARITO.WOW✈️",
+            "7433396735386405638": "OMARITO.WORLD👨🏻‍🎓",
+            "7433392358749653766": "OMARITO.CHEF🧑🏻‍🍳"
+        };
+
+        // Legacy name → numeric ID (so old ?playlist=Omarito.World links work)
+        const PLAYLIST_NAME_TO_ID = {
+            "Omarito.World": "7433396735386405638",
+            "Omarito.Wow":   "7433667529204828933",
+            "Omarito.Chef":  "7433392358749653766"
+        };
+
+        // Resolve playlist: prefer ?playlistId numeric, fall back to ?playlist name string
+        const selectedPlaylistId = (() => {
+            const pid = params.get("playlistId") || "";
+            if (pid && PLAYLIST_ID_TO_NAME[pid]) return pid;
+            const name = params.get("playlist") || "";
+            return PLAYLIST_NAME_TO_ID[name] || "";
+        })();
+
+        const selectedPlaylistName = selectedPlaylistId ? (PLAYLIST_ID_TO_NAME[selectedPlaylistId] || "") : "";
+
+        // Creator filter resolution (priority order):
+        // ?creator=Omar|Dylan|Sufiya  ->  ?character=omar|dylan|sufiya  ->  ?username=<tiktok handle>
+        const CREATOR_KEY_MAP = { omar: "omar", dylan: "dylan", sufiya: "sufiya" };
+        const HANDLE_KEY_MAP = { "omari.to": "omar", "dilandyalieva": "dylan", "hello.safia": "sufiya" };
+        const selectedCharacter = (() => {
+            const creator = (params.get("creator") || "").toLowerCase();
+            if (CREATOR_KEY_MAP[creator]) return CREATOR_KEY_MAP[creator];
+            const character = (params.get("character") || "").toLowerCase();
+            if (CREATOR_KEY_MAP[character]) return CREATOR_KEY_MAP[character];
+            const username = (params.get("username") || "").replace(/^@/, "").toLowerCase();
+            if (HANDLE_KEY_MAP[username]) return HANDLE_KEY_MAP[username];
+            return "omar"; // default
+        })();
+        const hasCreatorFilter = !!(params.get("creator") || params.get("character") || params.get("username") || selectedPlaylistId);
+
+        // NOTE: API_BASE is declared ONCE in /Codes/script.js (loaded above
+        // this inline block) and shared by every page. Do NOT redeclare it
+        // here — a second top-level `const API_BASE` throws
+        // "Identifier 'API_BASE' has already been declared" and stops ALL
+        // JavaScript on the page (grid never initializes).
+
+        const API_KEY = "AIzaSyBtqSE00ra7_NoRg3EGuipaq75VIBDsecg";
+
+        // Shared number/duration formatting for premium card stats.
+        // Values always come from the API/DB — never generated here.
+        function formatStat(num) {
+            if (num === null || num === undefined) return "0";
+            const n = Number(num);
+            if (isNaN(n)) return "0";
+            if (n < 1000) return n.toString();
+            function clean(val, suffix) {
+                let s = val < 1000 ? val.toFixed(2) : Math.round(val).toString();
+                if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+                return s + suffix;
+            }
+            if (n < 1000000) return clean(n / 1000, "K");
+            if (n < 1000000000) return clean(n / 1000000, "M");
+            return clean(n / 1000000000, "B");
+        }
+
+        function formatDuration(secs) {
+            secs = Math.round(Number(secs) || 0);
+            if (!secs) return "";
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const s = secs % 60;
+            return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+                : `${m}:${String(s).padStart(2, "0")}`;
+        }
+
+        // Creators Map
+        const creators = {
+            omar: {
+                name: "Omar (@omari.to)",
+                tiktokUsername: "omari.to"
+            },
+            dylan: {
+                name: "Dylan (@dilandyalieva)",
+                tiktokUsername: "dilandyalieva"
+            },
+            sufiya: {
+                name: "Sufiya (@hello.safia)",
+                tiktokUsername: "hello.safia"
+            }
+        };
+
+        const currentCreator = creators[selectedCharacter];
+        
+        // Page title: show playlist name if viewing a playlist, otherwise creator name
+        if (selectedPlaylistName) {
+            document.getElementById("pageTitle").innerText = selectedPlaylistName;
+        } else {
+            document.getElementById("pageTitle").innerText = currentCreator.name + " - Videos";
+        }
+
+        // Your manual video links
+        const manualVideos = [
+            "https://www.youtube.com/watch?v=NonjJz3Itm0",
+            "https://www.youtube.com/watch?v=97PvHHgo78k",
+            "https://www.youtube.com/watch?v=Gx0Gu9MoLUE",
+            "https://www.youtube.com/watch?v=aJuZJ8IGVr8",
+            "https://www.youtube.com/watch?v=uPCH8abY5UI",
+            "https://www.youtube.com/watch?v=rWg2q3dFD08",
+            "https://www.youtube.com/watch?v=fqPCgZxxTYo",
+            "https://www.youtube.com/watch?v=qJDYOVGmLs4",
+            "https://www.youtube.com/watch?v=vHyAsLKjdX4",
+            "https://www.youtube.com/watch?v=NdbTxmYPIZs",
+            "https://www.youtube.com/watch?v=7o_i_kGq5RM",
+            "https://www.youtube.com/watch?v=vw1zpys_zHM",
+            "https://www.youtube.com/watch?v=kMnvsihmzK0",
+            "https://www.youtube.com/watch?v=ez68g8AMMfE",
+            "https://www.youtube.com/watch?v=rkYNlgVchmk",
+            "https://www.youtube.com/watch?v=_e1y0l_ckow",
+            "https://www.youtube.com/watch?v=b0J63AAl8Bg",
+            "https://www.youtube.com/watch?v=XWmpoRUiVN0",
+            "https://www.youtube.com/watch?v=JDEgQ2fJKN0",
+            "https://www.youtube.com/watch?v=zHX8MFvSodQ",
+            "https://www.youtube.com/watch?v=igcjkzZML3w",
+            "https://www.youtube.com/watch?v=mYH2PJqolzw",
+            "https://www.youtube.com/watch?v=Bf2dK2Xmjbk",
+            "https://www.youtube.com/watch?v=qaBURJoADms",
+            "https://www.youtube.com/watch?v=bpevDcof9Bs",
+            "https://www.youtube.com/watch?v=KUGpsa2GLl0",
+            "https://www.youtube.com/watch?v=biZr5G97Jkg",
+            "https://www.youtube.com/watch?v=LZ94lFQhzAU",
+            "https://www.youtube.com/watch?v=gFoXE0d-M84",
+            "https://www.youtube.com/watch?v=ddTeh2C6cQI",
+            "https://www.youtube.com/watch?v=FhATNJMKkhU",
+            "https://www.youtube.com/watch?v=fUwUtnd3RR4",
+            "https://www.youtube.com/watch?v=onKLR8d6KDs",
+            "https://www.youtube.com/watch?v=dChJCHjyF5k"
+        ];
+
+
+        // ==================== VIDEOS TAB (Manual YouTube Links) ====================
+        function showVideos(event) {
+            // Tabs UI Update
+            document.querySelectorAll(".tabs button").forEach(btn => btn.classList.remove("active"));
+            event.target.classList.add("active");
+
+            // Show Videos, Hide Shorts
+            document.getElementById("videosSection").style.display = "block";
+            document.getElementById("shortsSection").style.display = "none";
+
+            const grid = document.getElementById("videoGrid");
+
+            // If already loaded, don't fetch again
+            if (grid.children.length > 0) return;
+
+
+            // Extract Video IDs (Shorts links are excluded — VIDEOS section shows normal YouTube videos only)
+            const videoIds = manualVideos
+                .filter(link => !/\/shorts\//i.test(link))
+                .map(link => {
+                    const url = new URL(link);
+                    return url.searchParams.get("v");
+                }).filter(id => id);
+
+            // ISO-8601 duration (PT1H2M3S) -> total seconds
+            function parseISO8601Duration(iso) {
+                if (!iso) return null;
+                const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+                if (!m) return null;
+                return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
+            }
+
+            // Fetch details from YouTube Data API for thumbnails, titles AND
+            // real statistics (views/likes) used by the hover stats overlay
+            fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds.join(',')}&key=${API_KEY}`)
+                .then(res => res.json())
+                .then(data => {
+
+                    data.items.forEach(item => {
+                        // YouTube Shorts exclude karo (60 seconds ya usse chhoti videos Shorts hoti hain)
+                        const totalSeconds = parseISO8601Duration(item.contentDetails && item.contentDetails.duration);
+                        if (totalSeconds !== null && totalSeconds <= 60) return;
+
+                        const videoId = item.id;
+                        const title = item.snippet.title;
+                        const channel = item.snippet.channelTitle || "Omari.to";
+                        const thumb = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.medium.url;
+                        // Actual YouTube values — never fake numbers
+                        const views = Number(item.statistics && item.statistics.viewCount) || 0;
+                        const likes = Number(item.statistics && item.statistics.likeCount) || 0;
+                        const comments = Number(item.statistics && item.statistics.commentCount) || 0;
+
+                        const card = document.createElement("div");
+                        card.className = "card";
+                        card.innerHTML = `
+                            <div class="card-thumb">
+                                <img src="${thumb}" alt="thumbnail" loading="lazy">
+                                ${formatDuration(totalSeconds) ? `<span class="duration-badge">${formatDuration(totalSeconds)}</span>` : ""}
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">${title}</div>
+                                <div class="card-creator">${channel}</div>
+                                <div class="card-stats">
+                                    <span>👁 ${formatStat(views)}</span>
+                                    <span>❤ ${formatStat(likes)}</span>
+                                </div>
+                            </div>
+                            <div class="card-overlay">
+                                <div class="ov-title">STATISTICS</div>
+                                <div class="ov-row"><span>Views</span><span>${formatStat(views)}</span></div>
+                                <div class="ov-row"><span>Likes</span><span>${formatStat(likes)}</span></div>
+                                <div class="ov-row"><span>Comments</span><span>${comments ? formatStat(comments) : "—"}</span></div>
+                                <div class="ov-row"><span>Duration</span><span>${formatDuration(totalSeconds) || "—"}</span></div>
+                                <div class="ov-play">▶ Watch Now</div>
+                            </div>
+                        `;
+                        // Click -> dedicated player page (exact video by real YouTube id)
+                        card.onclick = () => {
+                            window.location.href = `/Codes/player.html?type=youtube&id=${encodeURIComponent(videoId)}`;
+                        };
+
+                        grid.appendChild(card);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                });
+        }
+
+        // ==================== SHORTS TAB (TikTok Videos) ====================
+
+        // Local placeholder shown when no thumbnail can load. A single
+        // failed image must NEVER fail the whole grid.
+        const SHORTS_PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640">' +
+            '<rect width="100%" height="100%" fill="#161823"/>' +
+            '<text x="50%" y="50%" fill="#8a8b91" font-family="sans-serif" font-size="22" text-anchor="middle">TikTok Video</text>' +
+            '</svg>'
+        );
+
+        function buildShortsCard(video) {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const thumbWrap = document.createElement("div");
+            thumbWrap.className = "card-thumb";
+
+            const img = document.createElement("img");
+            img.alt = "thumbnail";
+            img.loading = "lazy";
+            img.style.aspectRatio = "9/16";
+            img.style.objectFit = "cover";
+
+            // Fallback chain (image-only, never touches the grid):
+            // 1) stored thumbnail URL  2) backend proxy with retry flag
+            //    (forces tikwm refresh)  3) alternate proxy without retry
+            //    4) local placeholder
+            img.onerror = () => {
+                console.log('[Thumbnail] Image failed for video:', video.id, 'dataset.fb1:', img.dataset.fb1);
+                
+                if (!img.dataset.fb1) {
+                    img.dataset.fb1 = "1";
+                    console.log('[Thumbnail] Trying backend proxy with retry=1');
+                    img.src = `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}&retry=1`;
+                } else if (!img.dataset.fb2) {
+                    img.dataset.fb2 = "1";
+                    console.log('[Thumbnail] Trying backend proxy without retry');
+                    img.src = `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`;
+                } else if (!img.dataset.fb3) {
+                    img.dataset.fb3 = "1";
+                    console.log('[Thumbnail] Using placeholder as final fallback');
+                    img.src = SHORTS_PLACEHOLDER;
+                }
+            };
+
+            // Signed TikTok CDN URLs expire (x-expires). Skip the direct
+            // URL entirely when it is already expired so no 403 request
+            // is fired; the backend proxy returns a fresh/valid image.
+            const exp = String(video.thumbnail || "").match(/x-expires=(\d+)/);
+            const thumbExpired = exp && (+exp[1] * 1000) < Date.now();
+            img.src = (video.thumbnail && !thumbExpired)
+                ? video.thumbnail
+                : `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`;
+
+            thumbWrap.appendChild(img);
+
+            // Duration badge (real stored value)
+            if (video.duration) {
+                const badge = document.createElement("span");
+                badge.className = "duration-badge";
+                badge.textContent = formatDuration(video.duration);
+                thumbWrap.appendChild(badge);
+            }
+
+            // Body: title + creator + compact stats (real DB values)
+            const body = document.createElement("div");
+            body.className = "card-body";
+
+            const title = document.createElement("div");
+            title.className = "card-title";
+            title.textContent = video.title || "TikTok Video";
+
+            const creator = document.createElement("div");
+            creator.className = "card-creator";
+            creator.textContent = "@" + currentCreator.tiktokUsername;
+
+            const stats = document.createElement("div");
+            stats.className = "card-stats";
+            stats.innerHTML = `
+                <span>👁 ${formatStat(video.views)}</span>
+                <span>❤ ${formatStat(video.likes)}</span>
+                <span>💬 ${formatStat(video.comments)}</span>
+            `;
+
+            body.appendChild(title);
+            body.appendChild(creator);
+            body.appendChild(stats);
+
+            // Hover stats overlay — actual stored TikTok values only
+            const overlay = document.createElement("div");
+            overlay.className = "card-overlay";
+            overlay.innerHTML = `
+                <div class="ov-title">STATISTICS</div>
+                <div class="ov-row"><span>Views</span><span>${formatStat(video.views)}</span></div>
+                <div class="ov-row"><span>Likes</span><span>${formatStat(video.likes)}</span></div>
+                <div class="ov-row"><span>Comments</span><span>${formatStat(video.comments)}</span></div>
+                <div class="ov-row"><span>Shares</span><span>${video.shares ? formatStat(video.shares) : "—"}</span></div>
+                <div class="ov-row"><span>Duration</span><span>${formatDuration(video.duration) || "—"}</span></div>
+                <div class="ov-play">▶ Watch Now</div>
+            `;
+
+            card.appendChild(thumbWrap);
+            card.appendChild(body);
+            card.appendChild(overlay);
+
+            // Click -> dedicated player page (exact TikTok video by real id)
+            card.onclick = () => {
+                window.location.href = `/Codes/player.html?type=tiktok&id=${encodeURIComponent(video.id)}`;
+            };
+
+            return card;
+        }
+
+        let currentPage = 1;
+        let hasMoreVideos = true;
+        let isLoadingMore = false;
+
+        async function showShorts(event) {
+            document.querySelectorAll(".tabs button").forEach(btn => btn.classList.remove("active"));
+            event.target.classList.add("active");
+
+            document.getElementById("videosSection").style.display = "none";
+            document.getElementById("shortsSection").style.display = "block";
+
+            const shortsGrid = document.getElementById("shortsGrid");
+            const shortsLoader = document.getElementById("shortsLoader");
+
+            // Reset pagination if this is a fresh load (not loading more)
+            if (shortsGrid.children.length === 0) {
+                currentPage = 1;
+                hasMoreVideos = true;
+            }
+
+            if (isLoadingMore) return;
+            isLoadingMore = true;
+
+            if (currentPage === 1) {
+                shortsLoader.innerText = `Loading TikTok Grid for @${currentCreator.tiktokUsername}...`;
+            } else {
+                shortsLoader.innerText = `Loading more videos...`;
+            }
+
+            // (A) API request failure (network / non-200 / non-JSON)
+            let data;
+            try {
+                // Build API URL with optional playlist filter and pagination
+                let apiUrl = `${API_BASE}/tiktok-grid-videos?username=${currentCreator.tiktokUsername}&page=${currentPage}&limit=20`;
+                if (selectedPlaylistId) {
+                    apiUrl += `&playlistId=${encodeURIComponent(selectedPlaylistId)}`;
+                }
+                
+                const res = await fetch(apiUrl);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                data = await res.json();
+            } catch (error) {
+                console.error("TikTok grid API request failed:", error);
+                shortsLoader.innerText = "Failed To Load TikTok Videos";
+                isLoadingMore = false;
+                return;
+            }
+
+            shortsLoader.innerText = "";
+            isLoadingMore = false;
+
+            // (B) backend answered but reported an error
+            if (!data || data.success !== true || !Array.isArray(data.videos)) {
+                shortsLoader.innerText = "Could not load TikTok grid at the moment.";
+                return;
+            }
+
+            // Update pagination state
+            hasMoreVideos = data.hasMore !== false;
+
+            // (B) valid response but zero videos for this account
+            if (data.videos.length === 0) {
+                if (currentPage === 1) {
+                    if (selectedPlaylistId) {
+                        shortsLoader.innerText = `No videos found for ${selectedPlaylistName} yet. Run the playlist sync to populate.`;
+                    } else {
+                        shortsLoader.innerText = `No TikTok videos found for @${currentCreator.tiktokUsername} yet.`;
+                    }
+                }
+                return;
+            }
+
+            // (C) valid videos: render every card. Individual thumbnail
+            // failures are handled per-image by the fallback chain above.
+            data.videos.forEach(video => {
+                try {
+                    shortsGrid.appendChild(buildShortsCard(video));
+                } catch (renderErr) {
+                    console.error("Skipping one video card:", renderErr);
+                }
+            });
+
+            currentPage++;
+
+            // Setup infinite scroll observer on first load
+            if (currentPage === 2 && !window._scrollObserver) {
+                window._scrollObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting && hasMoreVideos && !isLoadingMore) {
+                            console.log('[InfiniteScroll] Sentinel visible, loading next page...');
+                            showShorts({ target: document.getElementById("shortsBtn") });
+                        }
+                    });
+                }, { rootMargin: '400px' });
+
+                const sentinel = document.getElementById('scrollSentinel');
+                if (sentinel) {
+                    window._scrollObserver.observe(sentinel);
+                    console.log('[InfiniteScroll] Observer attached to sentinel');
+                }
+            }
+
+            // Show/hide loader based on hasMore state
+            if (!hasMoreVideos) {
+                shortsLoader.innerText = shortsGrid.children.length > 0 ? '' : shortsLoader.innerText;
+                shortsLoader.style.display = shortsGrid.children.length > 0 ? 'none' : 'block';
+            } else {
+                shortsLoader.style.display = 'block';
+            }
+        }
+
+        // DEFAULT LOAD: creator filter ho toh Shorts tab (TikTok videos), warna Videos tab (YouTube)
+        if (hasCreatorFilter) {
+            showShorts({ target: document.getElementById("shortsBtn") });
+        } else {
+            showVideos({ target: document.getElementById("videosBtn") });
+        }
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,98 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+public
+
+../Public
+
+del_me_1
+del_me_2
+del_me_3
+
+nm_old
+nm_stuck
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+
+# Build folders
+dist/
+build/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+
+# MongoDB database files (if local)
+data/
+*.mongodb
+
+# Uploads (optional)
+uploads/
+
+# Generated files
+*.tgz
+
+# Test reports
+reports/
+*.lcov
+
+# PM2
+.pm2/
+
+# Docker
+.dockerignore
+
+# Netlify
+.netlify/
+
+# Vercel
+.vercel/
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+
+# Backup files
+*.bak
+*.backup
+
+# Mac system files
+.AppleDouble
+.LSOverride

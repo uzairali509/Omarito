@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Omari.to</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/Codes/style.css">
+    <link rel="icon" href="/Public/Images/Logo.png">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+</head>
+
+<body>
+
+    <nav class="top-navbar">
+        <div class="logo">
+            <a href="http://localhost:3000/">
+                <img src="/Public/Images/Logo.png" width="50">
+                <span class="brand-name">omari<span class="dot">.</span>to</span>
+            </a>
+        </div>
+
+        <ul class="nav-links">
+            <!-- Agar login nahi hai toh Login button dikhega -->
+            <a href="/Codes/Login.html" id="loginLink" style="display: flex;">
+                <li>Login</li>
+            </a>
+
+
+            <a href="/Codes/About.html">
+                <li>About</li>
+            </a>
+            <li>Favorite</li>
+            <!-- Agar login hai toh yeh choti gol image dikhegi right side par -->
+            <div class="nav-profile-toggle" id="navProfileBox" style="display: none;" onclick="toggleProfilePanel()">
+                <img id="navProfileImg" src="/Public/Images/default-user.png">
+                <span id="navUserName"></span>
+            </div>
+        </ul>
+    </nav>
+
+    <div class="electric-cursor"></div>
+    <canvas id="lightningCanvas"></canvas>
+
+    <div class="side-buttons">
+        <a href="https://www.tiktok.com/@omari.to/live?lang=en" target="_blank"><button class="side-btn">Tikok
+                Live</button></a>
+        <a
+            onclick="openJourney('https://www.tiktok.com/@omari.to','Join the Official Community','Now click and join the group of Omari.to news and stay connected with the world.')"><button
+                class="side-btn">Join Group</button></a>
+    </div>
+
+
+    <nav class="bottom-navbar">
+
+        <div class="menu-toggle" id="menuToggle">
+            ☰
+        </div>
+
+        <div class="menu" id="menu">
+            <ul class="menu-links" id="mainMenu">
+                <li class="active">Omarito.World</li>
+                <li>Omarito.Wow</li>
+                <li>Omarito.Chef</li>
+                <li id="charactersBtn">Characters →</li>
+                <li id="yearBtn">Year →</li>
+                <li id="eventBtn">Special Events →</li>
+                <li id="emailBtn">Get Email →</li>
+                <li id="locationBtn">Get Destination →</li>
+                <li id="visitBtn">Visited Places →</li>
+                <a href="/Codes/About.html">
+                    <li>More with us →</li>
+                </a>
+            </ul>
+
+            <div class="social-links">
+                <a id="tiktokBtn">TikTok</a>
+                <a href="https://youtube.com/@Omari_to" target="_blank">Youtube</a>
+                <a href="https://www.instagram.com/omari.too" target="_blank">Instagram</a>
+                <a href="https://www.facebook.com/omar.aliev.2024/" target="_blank">Facebook</a>
+                <a href="https://www.threads.com/@omari.too" target="_blank">Threads</a>
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- 🔥 PROFILE DETAILS PANEL (Initially Hidden) -->
+    <section class="profile-panel" id="profilePanel" style="display: none;">
+
+        <h3 id="userEmail"></h3>
+
+        <div class="panel-profile-box">
+            <img id="panelProfileImg" src="/Public/Images/default-user.png">
+        </div>
+
+        <div class="panel-logindata">
+            <p><strong>Name:</strong> <span id="userName"></span></p>
+            <p><strong>Age:</strong> <span id="userAge"></span></p>
+            <p><strong>Date:</strong> <span id="userDate"></span></p>
+        </div>
+
+        <div class="panel-actions">
+            <button type="button" id="logoutBtn">LogOut</button>
+            <button type="button" id="deleteAccBtn">Delete Account</button>
+            <a href="/Codes/settings.html"><button type="button" class="settings-btn">Change Something Else</button></a>
+        </div>
+    </section>
+
+    <div id="connectionStatus" class="status-bar online">
+        🔴 Offline
+    </div>
+
+    <div id="loader">
+        <img src="/Public/Images/Logo.png" class="spinner">
+    </div>
+
+    <!-- LOGIN SECTION -->
+    <section class="loginPage">
+
+        <!-- LEFT IMAGE -->
+        <div class="login-left">
+            <!-- <img src="/Public/Images/369803110_1035284327914890_576424604712285328_n.jpg"> -->
+        </div>
+
+        <!-- RIGHT LOGIN -->
+        <div class="login-right">
+
+            <div class="loginCard">
+
+                <div class="loginHeader">
+
+                    <button class="backBtn" onclick="window.history.back()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+
+                    <div class="titleBox">
+                        <h1>Login</h1>
+                        <p>Welcome back to Omari.to</p>
+                    </div>
+
+                </div>
+
+                <!-- SIMPLE LOGIN FORM -->
+                <form id="loginForm" class="loginForm" action="http://localhost:3000/login" method="post">
+                    <span name="error" class="error"></span>
+                    <div class="row">
+                        <input type="email" placeholder="Email Address" name="email" required>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="password-container">
+                            <input type="password" id="password" placeholder="Password here" name="password" required>
+                            <i class="fa-solid fa-eye" id="togglePassword"></i>
+                        </div>
+                    </div>
+
+                    <div class="divider">
+                        <span>OR</span>
+                    </div>
+
+                    <!-- ✅ GOOGLE LOGIN BUTTON -->
+                    <a href="/auth/google" class="google-btn">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" height="20">
+                        Continue with Google
+                    </a>
+
+                    <!-- ✅ TIKTOK LOGIN BUTTON -->
+                    <a href="/auth/tiktok" class="tiktok-btn">
+                        <i class="fa-brands fa-tiktok"></i>
+                        Continue with TikTok
+                    </a>
+
+                    <a href="http://localhost:3000/Codes/SignIn.html" class="tiktok-btn">Don't Have Account</a>
+
+
+
+                    <button class="loginBtn" type="submit">Login</button>
+                    <strong><ins><a href="/Codes/ForgotPassword.html">Forget Password</a></ins></strong>
+
+
+
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <script src="/Codes/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        // Show OAuth error if redirected back with error
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const error = params.get('error');
+            if (error === 'google_failed') {
+                Toastify({
+                    text: "Google login failed. Please try again.",
+                    duration: 4000,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "#e74c3c" }
+                }).showToast();
+                window.history.replaceState({}, '', '/Codes/LogIn.html');
+            } else if (error === 'tiktok_failed') {
+                Toastify({
+                    text: "TikTok login failed. Please try again.",
+                    duration: 4000,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "#e74c3c" }
+                }).showToast();
+                window.history.replaceState({}, '', '/Codes/LogIn.html');
+            }
+        })();
+    </script>
+
+</body>
+
+</html>
