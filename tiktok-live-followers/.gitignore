@@ -12,6 +12,8 @@ public
 
 ../Public
 
+client_secret_*.json
+
 del_me_1
 del_me_2
 del_me_3
