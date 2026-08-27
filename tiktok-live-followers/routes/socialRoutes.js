@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const Video = require("../models/Video");
+const { fetchFreshThumbnail, isUsable } = require("../services/thumbnailService");
 
 // =======================
 // ALLOWLIST & HELPERS
@@ -204,6 +205,62 @@ router.get("/tiktok-data", async (req, res) => {
 });
 
 // =======================
+// POST /tiktok-data/update
+// Admin endpoint to manually update @omari.to follower/like counts
+// Body: { followers: <number>, likes: <number> }
+// =======================
+router.post("/tiktok-data/update", async (req, res) => {
+    try {
+        const { followers, likes } = req.body;
+        
+        if (followers === undefined && likes === undefined) {
+            return res.status(400).json({ success: false, error: "Provide followers and/or likes" });
+        }
+        
+        if (followers !== undefined && (isNaN(Number(followers)) || Number(followers) < 0)) {
+            return res.status(400).json({ success: false, error: "followers must be a positive number" });
+        }
+        if (likes !== undefined && (isNaN(Number(likes)) || Number(likes) < 0)) {
+            return res.status(400).json({ success: false, error: "likes must be a positive number" });
+        }
+
+        const now = Date.now();
+        
+        // Get current aggregated views from DB
+        const stats = await Video.aggregate([
+            { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
+            { $group: { _id: null, totalViews: { $sum: "$views" } } }
+        ]);
+        const totalViews = (stats[0] && stats[0].totalViews) || 0;
+
+        // Update cache
+        tiktokProfileCache = {
+            followers: followers !== undefined ? Number(followers) : tiktokProfileCache.followers,
+            likes: likes !== undefined ? Number(likes) : tiktokProfileCache.likes,
+            views: totalViews,
+            updatedAt: now
+        };
+
+        console.log("[tiktok-data] Manual update:", { 
+            followers: tiktokProfileCache.followers, 
+            likes: tiktokProfileCache.likes,
+            views: totalViews 
+        });
+
+        res.json({ 
+            success: true, 
+            followers: tiktokProfileCache.followers,
+            likes: tiktokProfileCache.likes,
+            views: totalViews,
+            updatedAt: new Date(now).toISOString()
+        });
+    } catch (err) {
+        console.error("POST /tiktok-data/update error:", err);
+        res.status(500).json({ success: false, error: "Failed to update stats" });
+    }
+});
+
+// =======================
 // GET /omari-ranking
 // Dynamic influencer rankings for the About page.
 //
@@ -369,11 +426,11 @@ router.get("/omari-videos", async (req, res) => {
 // =======================
 // GET /tiktok-thumbnail
 // Proxy / redirect to a valid thumbnail image
+// Uses thumbnailService for robust fallback chain: stored URL -> oEmbed -> page scrape
 // =======================
 router.get("/tiktok-thumbnail", async (req, res) => {
     try {
         const id = String(req.query.id || "").trim();
-        const retry = req.query.retry === "1"; // Frontend signals fallback retry
         if (!id) return res.status(400).send("Missing id");
 
         const doc = await Video.findOne({
@@ -388,21 +445,16 @@ router.get("/tiktok-thumbnail", async (req, res) => {
 
         const thumb = doc.thumbnail || "";
 
-        // Check if the stored thumbnail URL has expired
-        const exp = thumb.match(/x-expires=(\d+)/);
-        const expired = exp && (+exp[1] * 1000) < Date.now();
+        // Check if the stored thumbnail URL is still usable
+        if (isUsable(thumb)) {
+            return res.redirect(thumb);
+        }
 
-        // If this is a retry (direct URL failed) OR the stored URL is expired,
-        // always try tikwm for a fresh thumbnail
-        if ((retry || expired) && doc.webVideoUrl) {
+        // Stored URL expired or unusable — try to get fresh thumbnail
+        if (doc.webVideoUrl) {
             try {
-                console.log("[tiktok-thumbnail] Fetching fresh thumbnail from tikwm for:", doc.videoId);
-                const { data } = await axios.get(
-                    `https://www.tikwm.com/api/?url=${encodeURIComponent(doc.webVideoUrl)}`,
-                    { timeout: 20000, headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } }
-                );
-                const freshThumb = data?.data?.cover || data?.data?.origin_cover || "";
-                console.log("[tiktok-thumbnail] Tikwm response:", freshThumb ? "Got fresh thumbnail" : "No thumbnail in response");
+                console.log("[tiktok-thumbnail] Fetching fresh thumbnail for:", doc.videoId);
+                const freshThumb = await fetchFreshThumbnail(doc.webVideoUrl);
                 
                 if (freshThumb) {
                     // Update the stored thumbnail for next time
@@ -413,17 +465,11 @@ router.get("/tiktok-thumbnail", async (req, res) => {
                     return res.redirect(freshThumb);
                 }
             } catch (e) {
-                console.error("[tiktok-thumbnail] Tikwm thumbnail refresh failed:", e.message);
+                console.error("[tiktok-thumbnail] Thumbnail refresh failed:", e.message);
             }
         }
 
-        // If stored URL exists and is not expired, redirect to it (fast path)
-        if (thumb && !expired) {
-            return res.redirect(thumb);
-        }
-
-        // If stored URL exists but is expired (and tikwm failed), still try it
-        // as a last resort — sometimes the CDN accepts expired URLs
+        // If stored URL exists but is expired, still try it as last resort
         if (thumb) {
             console.log("[tiktok-thumbnail] Using expired URL as fallback:", thumb.substring(0, 60));
             return res.redirect(thumb);
@@ -568,6 +614,7 @@ router.get("/tiktok-video", async (req, res) => {
 // =======================
 // GET /tiktok-play
 // Resolve a currently-valid play URL for a video
+// Uses thumbnailService for robust fallback: stored URL -> tikwm -> page scrape
 // =======================
 router.get("/tiktok-play", async (req, res) => {
     try {
@@ -595,15 +642,12 @@ router.get("/tiktok-play", async (req, res) => {
         // Check if the stored playUrl is still usable
         let url = doc.playUrl && isStreamUsable(doc.playUrl) ? doc.playUrl : null;
 
-        // If not, try to resolve via tikwm
+        // If not, try to resolve via thumbnailService (tikwm + page scrape fallback)
         if (!url && doc.webVideoUrl) {
             try {
-                const { data } = await axios.get(
-                    `https://www.tikwm.com/api/?url=${encodeURIComponent(doc.webVideoUrl)}`,
-                    { timeout: 15000, headers: { "User-Agent": "Mozilla/5.0" } }
-                );
-                if (data?.data?.play) {
-                    url = data.data.play;
+                const { fetchFreshPlayUrl } = require("../services/thumbnailService");
+                url = await fetchFreshPlayUrl(doc.webVideoUrl);
+                if (url) {
                     // Cache the fresh play URL
                     Video.updateOne(
                         { videoId: doc.videoId },
@@ -611,7 +655,7 @@ router.get("/tiktok-play", async (req, res) => {
                     ).catch(() => { });
                 }
             } catch (e) {
-                console.error("tikwm play resolve failed:", e.message);
+                console.error("Play URL resolve failed:", e.message);
             }
         }
 
