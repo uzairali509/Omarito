@@ -580,6 +580,7 @@ router.get("/tiktok-playlists", async (req, res) => {
 // =======================
 // GET /tiktok-video
 // Single video lookup by id (allowlist enforced)
+// Returns fresh thumbnail via thumbnailService fallback chain
 // =======================
 router.get("/tiktok-video", async (req, res) => {
     try {
@@ -604,7 +605,30 @@ router.get("/tiktok-video", async (req, res) => {
             return res.json({ success: false, error: "Video not from allowed account" });
         }
 
-        res.json({ success: true, video: mapVideoDoc(doc) });
+        const videoData = mapVideoDoc(doc);
+
+        // Ensure thumbnail is fresh (same logic as /tiktok-thumbnail)
+        const thumb = videoData.thumbnail || "";
+        console.log("[tiktok-video] Checking thumbnail:", doc.videoId, "thumb:", thumb.substring(0, 80), "isUsable:", isUsable(thumb));
+        if (doc.webVideoUrl && !isUsable(thumb)) {
+            try {
+                console.log("[tiktok-video] Fetching fresh thumbnail for:", doc.videoId);
+                const freshThumb = await fetchFreshThumbnail(doc.webVideoUrl);
+                console.log("[tiktok-video] Fresh thumbnail result:", freshThumb ? "SUCCESS" : "FAILED/NULL");
+                if (freshThumb) {
+                    videoData.thumbnail = freshThumb;
+                    // Update stored thumbnail for next time
+                    Video.updateOne(
+                        { videoId: doc.videoId },
+                        { $set: { thumbnail: freshThumb } }
+                    ).catch(() => { });
+                }
+            } catch (e) {
+                console.error("[tiktok-video] Thumbnail refresh failed:", e.message);
+            }
+        }
+
+        res.json({ success: true, video: videoData });
     } catch (err) {
         console.error("GET /tiktok-video error:", err);
         res.status(500).json({ success: false, error: "Failed to fetch video" });
