@@ -119,9 +119,13 @@ app.use(session({
 // DATABASE
 // =======================
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+if (process.env.MONGO_URI) {
+    mongoose.connect(process.env.MONGO_URI)
+        .then(() => console.log("MongoDB Connected"))
+        .catch(err => console.log(err));
+} else {
+    console.log("ℹ️ MongoDB disabled (MONGO_URI not set)");
+}
 
 // =======================
 // ROUTES
@@ -170,217 +174,153 @@ const TikTokStrategy = require("passport-tiktok-auth").Strategy;
 const User = require("./models/User");
 const jwt = require("jsonwebtoken");
 
-// ✅ GOOGLE PASSPORT CONFIGURATION
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
-},
-    async (accessToken, refreshToken, profile, done) => {
-        try {
-            const googleId = profile.id;
-            const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
-            const displayName = profile.displayName || "";
-            const firstName = profile.name && profile.name.givenName ? profile.name.givenName : displayName.split(" ")[0] || "User";
-            const lastName = profile.name && profile.name.familyName ? profile.name.familyName : displayName.split(" ").slice(1).join(" ") || "";
-            const image = profile.photos && profile.photos[0] ? profile.photos[0].value : "default-user.png";
+// ✅ PASSPORT MIDDLEWARE (always initialize)
+app.use(passport.initialize());
+passport.serializeUser((user, done) => done(null, user._id));
+passport.deserializeUser(async (id, done) => {
+    try { done(null, await User.findById(id)); }
+    catch (err) { done(err, null); }
+});
 
-            // 1. Find by Google ID first
-            let user = await User.findOne({ googleId: googleId });
-            if (user) {
+// ✅ GOOGLE + TIKTOK OAUTH (conditional — only register when credentials exist)
+const hasGoogleCreds = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+const hasTikTokCreds = !!(process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET);
+
+if (hasGoogleCreds) {
+    passport.use(new GoogleStrategy({
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
+    },
+        async (accessToken, refreshToken, profile, done) => {
+            try {
+                const googleId = profile.id;
+                const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+                const displayName = profile.displayName || "";
+                const firstName = profile.name && profile.name.givenName ? profile.name.givenName : displayName.split(" ")[0] || "User";
+                const lastName = profile.name && profile.name.familyName ? profile.name.familyName : displayName.split(" ").slice(1).join(" ") || "";
+                const image = profile.photos && profile.photos[0] ? profile.photos[0].value : "default-user.png";
+
+                let user = await User.findOne({ googleId: googleId });
+                if (user) return done(null, user);
+
+                if (email) {
+                    user = await User.findOne({ email: email.toLowerCase() });
+                    if (user) {
+                        user.googleId = googleId;
+                        if (!user.authProvider || user.authProvider === 'local') user.authProvider = 'google';
+                        if (!user.image || user.image === 'default-user.png') user.image = image;
+                        await user.save();
+                        return done(null, user);
+                    }
+                }
+
+                const username = "@" + firstName.toLowerCase() + (lastName ? lastName.toLowerCase() : "") + "_" + googleId.substring(0, 4);
+                user = await User.create({
+                    googleId, authProvider: 'google', firstname: firstName, lastname: lastName,
+                    username, email: email ? email.toLowerCase() : `${googleId}@google.omari.to`,
+                    image, password: "google_oauth"
+                });
                 return done(null, user);
-            }
+            } catch (err) { return done(err, null); }
+        }
+    ));
 
-            // 2. If email exists, find existing local account with same email
-            if (email) {
-                user = await User.findOne({ email: email.toLowerCase() });
+    app.get("/auth/google", (req, res, next) => {
+        if (req.query.from) req.session.googleReturnTo = req.query.from;
+        passport.authenticate("google", { scope: ["openid", "profile", "email"] })(req, res, next);
+    });
+
+    app.get("/auth/google/callback",
+        passport.authenticate("google", { failureRedirect: "/Codes/LogIn.html?error=google_failed" }),
+        (req, res) => {
+            try {
+                const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+                res.clearCookie("token");
+                res.cookie("token", token, { httpOnly: true, sameSite: "lax", secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 });
+                const returnTo = req.session.googleReturnTo || "/";
+                delete req.session.googleReturnTo;
+                res.redirect(returnTo);
+            } catch (err) {
+                console.error("Google callback error:", err);
+                res.redirect("/Codes/LogIn.html?error=google_failed");
+            }
+        }
+    );
+} else {
+    console.log("ℹ️ Google OAuth disabled (GOOGLE_CLIENT_ID/SECRET not set)");
+    app.get("/auth/google", (req, res) => res.redirect("/Codes/LogIn.html?error=google_failed"));
+    app.get("/auth/google/callback", (req, res) => res.redirect("/Codes/LogIn.html?error=google_failed"));
+}
+
+if (hasTikTokCreds) {
+    passport.use(new TikTokStrategy({
+        clientID: process.env.TIKTOK_CLIENT_KEY,
+        clientSecret: process.env.TIKTOK_CLIENT_SECRET,
+        callbackURL: process.env.TIKTOK_REDIRECT_URI,
+        scope: ["user.info.basic"]
+    },
+        async (accessToken, refreshToken, profile, done) => {
+            try {
+                const tiktokId = profile.id;
+                const username = profile.username || profile.open_id || "tiktok_user";
+                const displayName = profile.displayName || profile.nickname || username;
+                const avatarUrl = profile.avatarUrl || profile.avatar || "default-user.png";
+
+                let user = await User.findOne({ tiktokId: tiktokId });
                 if (user) {
-                    // Link Google identity to existing account
-                    user.googleId = googleId;
-                    if (!user.authProvider || user.authProvider === 'local') {
-                        user.authProvider = 'google';
-                    }
                     if (!user.image || user.image === 'default-user.png') {
-                        user.image = image;
+                        user.image = avatarUrl;
+                        await user.save();
                     }
+                    return done(null, user);
+                }
+
+                const fakeEmail = `${username}@tiktok.omari.to`;
+                user = await User.findOne({ email: fakeEmail });
+                if (user) {
+                    user.tiktokId = tiktokId;
+                    if (!user.authProvider || user.authProvider === 'local') user.authProvider = 'tiktok';
+                    if (!user.image || user.image === 'default-user.png') user.image = avatarUrl;
                     await user.save();
                     return done(null, user);
                 }
-            }
 
-            // 3. Create new user
-            const username = "@" + firstName.toLowerCase() + (lastName ? lastName.toLowerCase() : "") + "_" + googleId.substring(0, 4);
-            user = await User.create({
-                googleId: googleId,
-                authProvider: 'google',
-                firstname: firstName,
-                lastname: lastName,
-                username: username,
-                email: email ? email.toLowerCase() : `${googleId}@google.omari.to`,
-                image: image,
-                password: "google_oauth"
-            });
-
-            return done(null, user);
-        } catch (err) {
-            return done(err, null);
-        }
-    }
-));
-
-// ✅ TIKTOK PASSPORT CONFIGURATION
-passport.use(new TikTokStrategy({
-    clientID: process.env.TIKTOK_CLIENT_KEY,      // Client Key
-    clientSecret: process.env.TIKTOK_CLIENT_SECRET, // Client Secret
-    callbackURL: process.env.TIKTOK_REDIRECT_URI,
-    scope: ["user.info.basic"]
-},
-    async (accessToken, refreshToken, profile, done) => {
-        try {
-            const tiktokId = profile.id;
-            const username = profile.username || profile.open_id || "tiktok_user";
-            const displayName = profile.displayName || profile.nickname || username;
-            const avatarUrl = profile.avatarUrl || profile.avatar || "default-user.png";
-
-            // 1. Find by tiktokId first (returning user)
-            let user = await User.findOne({ tiktokId: tiktokId });
-            if (user) {
-                // Update avatar if missing
-                if (!user.image || user.image === 'default-user.png') {
-                    user.image = avatarUrl;
-                    await user.save();
-                }
+                user = await User.create({
+                    tiktokId, authProvider: 'tiktok', firstname: displayName, lastname: "",
+                    username: "@" + username, email: fakeEmail, image: avatarUrl, password: "tiktok_oauth"
+                });
                 return done(null, user);
+            } catch (err) { return done(err, null); }
+        }
+    ));
+
+    app.get("/auth/tiktok", (req, res, next) => {
+        if (req.query.from) req.session.tiktokReturnTo = req.query.from;
+        passport.authenticate("tiktok")(req, res, next);
+    });
+
+    app.get("/auth/tiktok/callback",
+        passport.authenticate("tiktok", { failureRedirect: "/Codes/LogIn.html?error=tiktok_failed" }),
+        (req, res) => {
+            try {
+                const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+                res.clearCookie("token");
+                res.cookie("token", token, { httpOnly: true, sameSite: "lax", secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 });
+                const returnTo = req.session.tiktokReturnTo || "/";
+                delete req.session.tiktokReturnTo;
+                res.redirect(returnTo);
+            } catch (err) {
+                console.error("TikTok callback error:", err);
+                res.redirect("/Codes/LogIn.html?error=tiktok_failed");
             }
-
-            // 2. Check if email-based account already exists (link TikTok to existing)
-            const fakeEmail = `${username}@tiktok.omari.to`;
-            user = await User.findOne({ email: fakeEmail });
-            if (user) {
-                user.tiktokId = tiktokId;
-                if (!user.authProvider || user.authProvider === 'local') {
-                    user.authProvider = 'tiktok';
-                }
-                if (!user.image || user.image === 'default-user.png') {
-                    user.image = avatarUrl;
-                }
-                await user.save();
-                return done(null, user);
-            }
-
-            // 3. Create new user
-            user = await User.create({
-                tiktokId: tiktokId,
-                authProvider: 'tiktok',
-                firstname: displayName,
-                lastname: "",
-                username: "@" + username,
-                email: fakeEmail,
-                image: avatarUrl,
-                password: "tiktok_oauth"
-            });
-
-            return done(null, user);
-        } catch (err) {
-            return done(err, null);
         }
-    }
-));
-
-// ✅ Passport Middleware
-app.use(passport.initialize());
-
-// Passport session serialization (minimal — the app primarily uses JWT cookies,
-// but serialize/deserialize are required for passport.authenticate to work)
-passport.serializeUser((user, done) => {
-    done(null, user._id);
-});
-
-passport.deserializeUser(async (id, done) => {
-    try {
-        const user = await User.findById(id);
-        done(null, user);
-    } catch (err) {
-        done(err, null);
-    }
-});
-
-// ✅ GOOGLE OAUTH ROUTES
-app.get("/auth/google", (req, res, next) => {
-    // Store where the user came from so we can redirect back after login
-    if (req.query.from) {
-        req.session.googleReturnTo = req.query.from;
-    }
-    passport.authenticate("google", {
-        scope: ["openid", "profile", "email"]
-    })(req, res, next);
-});
-
-app.get("/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/Codes/LogIn.html?error=google_failed" }),
-    (req, res) => {
-        try {
-            // Generate JWT token (same as normal login)
-            const token = jwt.sign(
-                { id: req.user._id },
-                process.env.JWT_SECRET,
-                { expiresIn: "7d" }
-            );
-
-            res.clearCookie("token");
-            res.cookie("token", token, {
-                httpOnly: true,
-                sameSite: "lax",
-                secure: false,
-                maxAge: 7 * 24 * 60 * 60 * 1000
-            });
-
-            // Redirect to where they came from, or homepage
-            const returnTo = req.session.googleReturnTo || "/";
-            delete req.session.googleReturnTo;
-            res.redirect(returnTo);
-        } catch (err) {
-            console.error("Google callback error:", err);
-            res.redirect("/Codes/LogIn.html?error=google_failed");
-        }
-    }
-);
-
-// ✅ TIKTOK OAUTH ROUTES
-app.get("/auth/tiktok", (req, res, next) => {
-    if (req.query.from) {
-        req.session.tiktokReturnTo = req.query.from;
-    }
-    passport.authenticate("tiktok")(req, res, next);
-});
-
-app.get("/auth/tiktok/callback",
-    passport.authenticate("tiktok", { failureRedirect: "/Codes/LogIn.html?error=tiktok_failed" }),
-    (req, res) => {
-        try {
-            const token = jwt.sign(
-                { id: req.user._id },
-                process.env.JWT_SECRET,
-                { expiresIn: "7d" }
-            );
-
-            res.clearCookie("token");
-            res.cookie("token", token, {
-                httpOnly: true,
-                sameSite: "lax",
-                secure: false,
-                maxAge: 7 * 24 * 60 * 60 * 1000
-            });
-
-            const returnTo = req.session.tiktokReturnTo || "/";
-            delete req.session.tiktokReturnTo;
-            res.redirect(returnTo);
-        } catch (err) {
-            console.error("TikTok callback error:", err);
-            res.redirect("/Codes/LogIn.html?error=tiktok_failed");
-        }
-    }
-);
+    );
+} else {
+    console.log("ℹ️ TikTok OAuth disabled (TIKTOK_CLIENT_KEY/SECRET not set)");
+    app.get("/auth/tiktok", (req, res) => res.redirect("/Codes/LogIn.html?error=tiktok_failed"));
+    app.get("/auth/tiktok/callback", (req, res) => res.redirect("/Codes/LogIn.html?error=tiktok_failed"));
+}
 
 
 // =======================
