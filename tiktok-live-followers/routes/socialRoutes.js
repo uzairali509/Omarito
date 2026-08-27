@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const Video = require("../models/Video");
 const { fetchFreshThumbnail, isUsable } = require("../services/thumbnailService");
+const { getRankings, updateRanking } = require("../services/rankingService");
 
 // =======================
 // ALLOWLIST & HELPERS
@@ -88,6 +89,66 @@ let tiktokProfileCache = {
 };
 const PROFILE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+// Fetch TikTok stats via RapidAPI (Social Blade) as fallback
+async function fetchTikTokStatsViaRapidAPI(handle) {
+    const rapidApiKey = process.env.RAPIDAPI_KEY;
+    if (!rapidApiKey) {
+        console.log("[tiktok-data] RapidAPI key not configured, skipping");
+        return null;
+    }
+
+    try {
+        console.log("[tiktok-data] Fetching TikTok stats via RapidAPI for @" + handle);
+        const { data } = await axios.get("https://social-blade1.p.rapidapi.com/tiktok/user", {
+            timeout: 10000,
+            headers: {
+                "X-RapidAPI-Key": rapidApiKey,
+                "X-RapidAPI-Host": "social-blade1.p.rapidapi.com"
+            },
+            params: { username: handle }
+        });
+
+        console.log("[tiktok-data] RapidAPI response:", JSON.stringify(data).substring(0, 200));
+
+        // Parse the response - structure may vary
+        let followers = 0;
+        let likes = 0;
+
+        if (data?.followers) {
+            followers = parseInt(data.followers.toString().replace(/,/g, ''), 10);
+        } else if (data?.data?.followers) {
+            followers = parseInt(data.data.followers.toString().replace(/,/g, ''), 10);
+        }
+
+        if (data?.likes || data?.hearts) {
+            likes = parseInt((data.likes || data.hearts).toString().replace(/,/g, ''), 10);
+        } else if (data?.data?.likes || data?.data?.hearts) {
+            likes = parseInt((data.data.likes || data.data.hearts).toString().replace(/,/g, ''), 10);
+        }
+
+        // Also try total_likes field
+        if (likes === 0 && data?.total_likes) {
+            likes = parseInt(data.total_likes.toString().replace(/,/g, ''), 10);
+        } else if (likes === 0 && data?.data?.total_likes) {
+            likes = parseInt(data.data.total_likes.toString().replace(/,/g, ''), 10);
+        }
+
+        console.log("[tiktok-data] RapidAPI Extracted: followers=" + followers + " likes=" + likes);
+
+        if (followers > 0 && likes > 0) {
+            return { followers, likes };
+        }
+        return null;
+    } catch (err) {
+        console.error("[tiktok-data] RapidAPI fetch failed:", err.message);
+        if (err.response) {
+            console.error("[tiktok-data] RapidAPI Response status:", err.response.status);
+            console.error("[tiktok-data] RapidAPI Response data:", err.response.data);
+        }
+        return null;
+    }
+}
+
 // Scrape real account-level stats from TikTok profile page
 async function fetchRealProfileStats(handle) {
     try {
@@ -106,12 +167,66 @@ async function fetchRealProfileStats(handle) {
         console.log("[tiktok-data] HTML received, length:", typeof html === "string" ? html.length : typeof html);
 
         // Extract real account-level stats from the HTML
-        const followerMatch = html.match(/"followerCount"[\s:]*(\d+)/i);
-        const heartMatch = html.match(/"heartCount"[\s:]*(\d+)/i)
-                      || html.match(/"totalFavorited"[\s:]*(\d+)/i);
+        // Try multiple patterns as TikTok's HTML structure may vary
+        const patterns = {
+            followers: [
+                /"followerCount"[\s:]*(\d+)/i,
+                /"followerCount"\s*:\s*(\d+)/i,
+                /followerCount["\s:]+(\d+)/i,
+                /"stats"[\s\S]{0,100}"followerCount"[\s:]*(\d+)/i,
+            ],
+            likes: [
+                /"heartCount"[\s:]*(\d+)/i,
+                /"heartCount"\s*:\s*(\d+)/i,
+                /"totalFavorited"[\s:]*(\d+)/i,
+                /"totalFavorited"\s*:\s*(\d+)/i,
+                /heartCount["\s:]+(\d+)/i,
+                /"stats"[\s\S]{0,100}"heartCount"[\s:]*(\d+)/i,
+            ]
+        };
 
-        const followers = followerMatch ? parseInt(followerMatch[1], 10) : 0;
-        const likes = heartMatch ? parseInt(heartMatch[1], 10) : 0;
+        let followers = 0;
+        let likes = 0;
+
+        // Try each pattern for followers
+        for (const pattern of patterns.followers) {
+            const match = html.match(pattern);
+            if (match && match[1]) {
+                followers = parseInt(match[1], 10);
+                if (followers > 0) break;
+            }
+        }
+
+        // Try each pattern for likes
+        for (const pattern of patterns.likes) {
+            const match = html.match(pattern);
+            if (match && match[1]) {
+                likes = parseInt(match[1], 10);
+                if (likes > 0) break;
+            }
+        }
+
+        // Also try to extract from __UNIVERSAL_DATA_FOR_REHYDRATION__ script tag
+        if (followers === 0 || likes === 0) {
+            try {
+                const universalDataMatch = html.match(/__UNIVERSAL_DATA_FOR_REHYDRATION__\s*=\s*(\{[\s\S]*?\});/);
+                if (universalDataMatch) {
+                    const universalData = JSON.parse(universalDataMatch[1]);
+                    // Navigate to user stats
+                    const userData = universalData?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo;
+                    if (userData) {
+                        if (followers === 0 && userData.stats?.followerCount) {
+                            followers = parseInt(userData.stats.followerCount, 10);
+                        }
+                        if (likes === 0 && userData.stats?.heartCount) {
+                            likes = parseInt(userData.stats.heartCount, 10);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log("[tiktok-data] Universal data parsing failed:", e.message);
+            }
+        }
 
         console.log("[tiktok-data] Extracted: followers=" + followers + " likes=" + likes);
         
@@ -144,8 +259,14 @@ router.get("/tiktok-data", async (req, res) => {
             });
         }
 
-        // Fetch REAL account-level stats from TikTok
-        const profileStats = await fetchRealProfileStats("omari.to");
+        // Fetch REAL account-level stats from TikTok (try scraping first)
+        let profileStats = await fetchRealProfileStats("omari.to");
+
+        // If scraping fails, try RapidAPI as fallback
+        if (!profileStats || profileStats.followers === 0) {
+            console.log("[tiktok-data] Direct scrape failed, trying RapidAPI fallback...");
+            profileStats = await fetchTikTokStatsViaRapidAPI("omari.to");
+        }
 
         if (profileStats && profileStats.followers > 0) {
             // Also get aggregated views from DB (TikTok page doesn't expose total views)
@@ -169,8 +290,8 @@ router.get("/tiktok-data", async (req, res) => {
                 views: totalViews
             });
         } else {
-            // Scrape failed — return cached baseline followers (59M) + baseline likes (781M) + DB aggregated views
-            console.log("[tiktok-data] Using cached baseline followers + baseline likes + DB aggregated views");
+            // Both sources failed — return cached baseline followers (59M) + baseline likes (781M) + DB aggregated views
+            console.log("[tiktok-data] All sources failed, using cached baseline followers + baseline likes + DB aggregated views");
             
             const stats = await Video.aggregate([
                 { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
@@ -263,92 +384,18 @@ router.post("/tiktok-data/update", async (req, res) => {
 // =======================
 // GET /omari-ranking
 // Dynamic influencer rankings for the About page.
-//
-// Rankings are read from the Ranking model (MongoDB).
-// Seed or update them with:
-//   node scripts/seedRankings.js
-//   POST /omari-ranking/update  { platform, rank }
-//
-// The frontend About page expects:
-//   { success, rankings: { asia, world, kazakhstan }, lastUpdated }
+// Uses rankingService for dynamic fetching with RapidAPI fallback
 // =======================
-
-const Ranking = require("../models/Ranking");
-
-// In-memory cache to avoid a DB query on every page load
-// TTL controlled by RANKINGS_CACHE_MINUTES env var (default 60 min)
-const RANKINGS_CACHE_TTL = parseInt(process.env.RANKINGS_CACHE_MINUTES || "60", 10) * 60 * 1000;
-let rankingCache = {
-    loaded: false,
-    rankings: { asia: null, world: null, kazakhstan: null },
-    lastUpdated: null
-};
-
-async function loadRankingsFromDB() {
-    try {
-        const docs = await Ranking.find({
-            platform: { $in: ["tiktok_asia", "tiktok_world", "tiktok_kazakhstan"] }
-        }).lean();
-
-        const map = {};
-        docs.forEach(d => { map[d.platform] = d; });
-
-        const asia        = map["tiktok_asia"]        ? map["tiktok_asia"].rank        : null;
-        const world       = map["tiktok_world"]       ? map["tiktok_world"].rank       : null;
-        const kazakhstan  = map["tiktok_kazakhstan"]  ? map["tiktok_kazakhstan"].rank  : null;
-
-        // Only update cache if at least one real value exists
-        if (asia !== null || world !== null || kazakhstan !== null) {
-            rankingCache = {
-                loaded: true,
-                rankings: { asia, world, kazakhstan },
-                lastUpdated: new Date()
-            };
-            console.log("[rankings] Loaded from DB:", rankingCache.rankings);
-        }
-        return rankingCache;
-    } catch (err) {
-        console.error("[rankings] DB read failed:", err.message);
-        return rankingCache;
-    }
-}
-
 router.get("/omari-ranking", async (req, res) => {
     try {
-        const now = Date.now();
-        const cacheStale = !rankingCache.loaded ||
-            !rankingCache.lastUpdated ||
-            (now - rankingCache.lastUpdated.getTime()) > RANKINGS_CACHE_TTL;
-
-        if (cacheStale) {
-            await loadRankingsFromDB();
-        }
-
-        if (rankingCache.loaded && (
-            rankingCache.rankings.asia !== null ||
-            rankingCache.rankings.world !== null ||
-            rankingCache.rankings.kazakhstan !== null
-        )) {
-            return res.json({
-                success: true,
-                rankings: rankingCache.rankings,
-                lastUpdated: rankingCache.lastUpdated
-            });
-        }
-
-        // No ranking data seeded yet — return null values so frontend shows "Updating..."
-        res.json({
-            success: false,
-            rankings: { asia: null, world: null, kazakhstan: null },
-            lastUpdated: null,
-            message: "No ranking data available. Run: node scripts/seedRankings.js"
-        });
+        const result = await getRankings();
+        res.json(result);
     } catch (err) {
         console.error("GET /omari-ranking error:", err);
         res.json({
             success: false,
-            rankings: rankingCache.rankings,
-            lastUpdated: rankingCache.lastUpdated
+            rankings: { asia: null, world: null, kazakhstan: null },
+            lastUpdated: null
         });
     }
 });
@@ -361,29 +408,11 @@ router.get("/omari-ranking", async (req, res) => {
 router.post("/omari-ranking/update", async (req, res) => {
     try {
         const { platform, rank } = req.body;
-        const validPlatforms = ["tiktok_asia", "tiktok_world", "tiktok_kazakhstan"];
-
-        if (!validPlatforms.includes(platform)) {
-            return res.status(400).json({ success: false, error: "Invalid platform. Use: " + validPlatforms.join(", ") });
-        }
-        if (!rank || isNaN(Number(rank)) || Number(rank) < 1) {
-            return res.status(400).json({ success: false, error: "rank must be a positive number" });
-        }
-
-        const updated = await Ranking.findOneAndUpdate(
-            { platform },
-            { platform, rank: Number(rank), lastUpdated: new Date(), source: "admin" },
-            { upsert: true, returnDocument: "after" }
-        );
-
-        // Invalidate cache
-        rankingCache.loaded = false;
-        rankingCache.lastUpdated = null;
-
-        res.json({ success: true, platform, rank: Number(rank), updated });
+        const result = await updateRanking(platform, rank);
+        res.json(result);
     } catch (err) {
         console.error("POST /omari-ranking/update error:", err);
-        res.status(500).json({ success: false, error: "Failed to update ranking" });
+        res.status(500).json({ success: false, error: err.message || "Failed to update ranking" });
     }
 });
 
@@ -609,12 +638,9 @@ router.get("/tiktok-video", async (req, res) => {
 
         // Ensure thumbnail is fresh (same logic as /tiktok-thumbnail)
         const thumb = videoData.thumbnail || "";
-        console.log("[tiktok-video] Checking thumbnail:", doc.videoId, "thumb:", thumb.substring(0, 80), "isUsable:", isUsable(thumb));
         if (doc.webVideoUrl && !isUsable(thumb)) {
             try {
-                console.log("[tiktok-video] Fetching fresh thumbnail for:", doc.videoId);
                 const freshThumb = await fetchFreshThumbnail(doc.webVideoUrl);
-                console.log("[tiktok-video] Fresh thumbnail result:", freshThumb ? "SUCCESS" : "FAILED/NULL");
                 if (freshThumb) {
                     videoData.thumbnail = freshThumb;
                     // Update stored thumbnail for next time

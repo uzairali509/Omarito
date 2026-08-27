@@ -433,28 +433,31 @@ async function loadRanking() {
         const worldEl = document.getElementById("worldRank");
         const kzEl = document.getElementById("kzRank");
 
-        if (data.success) {
-            if (asiaEl) asiaEl.innerText = data.asiaRank;
-            if (worldEl) worldEl.innerText = data.worldRank;
-            if (kzEl) kzEl.innerText = data.kzRank;
+        if (data.success && data.rankings) {
+            // Show actual rank values, or "Updating..." if null
+            if (asiaEl) asiaEl.innerText = data.rankings.asia !== null ? "#" + data.rankings.asia : "Updating...";
+            if (worldEl) worldEl.innerText = data.rankings.world !== null ? "#" + data.rankings.world : "Updating...";
+            if (kzEl) kzEl.innerText = data.rankings.kazakhstan !== null ? "#" + data.rankings.kazakhstan : "Updating...";
         } else {
-            // Fallback values
-            if (asiaEl) asiaEl.innerText = "#10";
-            if (worldEl) worldEl.innerText = "#25";
-            if (kzEl) kzEl.innerText = "#1";
+            // No valid data yet - show "Updating..."
+            if (asiaEl) asiaEl.innerText = "Updating...";
+            if (worldEl) worldEl.innerText = "Updating...";
+            if (kzEl) kzEl.innerText = "Updating...";
         }
 
     } catch (error) {
         console.log("Ranking Error:", error);
-        // Fallback values
-        document.getElementById("asiaRank").innerText = "#10";
-        document.getElementById("worldRank").innerText = "#25";
-        document.getElementById("kzRank").innerText = "#1";
+        // Show "Updating..." on error instead of fake fallback values
+        document.getElementById("asiaRank").innerText = "Updating...";
+        document.getElementById("worldRank").innerText = "Updating...";
+        document.getElementById("kzRank").innerText = "Updating...";
     }
 }
 
 
 loadRanking();
+// Refresh rankings every 10 minutes
+setInterval(loadRanking, 10 * 60 * 1000);
 
 
 

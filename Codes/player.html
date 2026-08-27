@@ -983,6 +983,23 @@
             display: none !important;
         }
 
+        /* TikTok embed iframe */
+        #ttContainer {
+            width: 100%;
+            height: 100%;
+        }
+
+        #ttContainer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .video-wrapper.mode-tiktok .controls {
+            display: none !important;
+        }
+
         /* TikTok: portrait stage centered inside the main area */
         .video-wrapper.mode-tiktok {
             aspect-ratio: 9/16;
@@ -991,7 +1008,7 @@
             margin: 0 auto;
         }
 
-        /* Watch-on-TikTok fallback (shown when no direct stream resolves) */
+        /* Watch-on-TikTok fallback (shown when embed fails) */
         #tiktokFallback {
             position: absolute;
             inset: 0;
@@ -1165,14 +1182,14 @@
                     <span class="back-label">Back</span>
                 </div>
 
-                <!-- TikTok / direct-stream playback (native custom player) -->
-                <video id="video" preload="metadata" style="display: none;"></video>
+                <!-- TikTok embed iframe (official TikTok player) -->
+                <div id="ttContainer" style="display: none;"></div>
 
                 <!-- YouTube embed target (YouTube IFrame API mounts here) -->
                 <div id="ytContainer" style="display: none;"></div>
 
-                <!-- Fallback when no direct TikTok stream can be resolved:
-                     thumbnail + "Watch on TikTok" (existing fallback behavior) -->
+                <!-- Fallback when embed fails:
+                     thumbnail + "Watch on TikTok" -->
                 <div id="tiktokFallback" style="display: none;">
                     <img id="fallbackThumb" src="" alt="thumbnail">
                     <a id="watchOnTikTok" href="#" target="_blank" rel="noopener">
@@ -1305,6 +1322,7 @@
         // API_BASE is declared ONCE in /Codes/script.js — never redeclare here.
         const API_KEY = "AIzaSyBtqSE00ra7_NoRg3EGuipaq75VIBDsecg";
         const ytContainer = document.getElementById('ytContainer');
+        const ttContainer = document.getElementById('ttContainer');
         const tiktokFallback = document.getElementById('tiktokFallback');
 
         // The project's allowed YouTube videos (Omari.to channel) — same
@@ -1616,13 +1634,14 @@
             videoWrapper.classList.remove('mode-youtube', 'mode-tiktok');
             video.style.display = 'none';
             ytContainer.style.display = 'none';
+            ttContainer.style.display = 'none';
             tiktokFallback.style.display = 'none';
             if (mode === 'youtube') {
                 videoWrapper.classList.add('mode-youtube');
                 ytContainer.style.display = 'block';
             } else if (mode === 'tiktok') {
                 videoWrapper.classList.add('mode-tiktok');
-                video.style.display = 'block';
+                ttContainer.style.display = 'block';
             } else if (mode === 'fallback') {
                 videoWrapper.classList.add('mode-tiktok');
                 tiktokFallback.style.display = 'flex';
@@ -1697,7 +1716,7 @@
             }
         }
 
-        // ===== TIKTOK PLAYER (existing native custom player) =====
+        // ===== TIKTOK PLAYER (official embed iframe) =====
         function showTikTokFallback(rec, watchUrl) {
             setMode('fallback');
             document.getElementById('fallbackThumb').src =
@@ -1735,42 +1754,21 @@
                 shares: rec.shares, duration: rec.duration, date: rec.createTime
             });
 
-            // Resolve a currently-valid stream via the backend (stored
-            // playUrl while valid, otherwise a fresh signed mp4)
-            let playUrl = null;
-            let watchUrl = rec.video_url;
-            try {
-                const pr = await fetch(`${API_BASE}/tiktok-play?id=${encodeURIComponent(id)}`);
-                const pd = await pr.json();
-                console.log('[Player] Play URL response:', pd);
-                if (pd && pd.success) {
-                    playUrl = pd.playUrl;
-                    watchUrl = pd.watchUrl || watchUrl;
+            // Use official TikTok embed iframe for reliable playback
+            const embedUrl = `https://www.tiktok.com/embed/v2/${encodeURIComponent(id)}`;
+            console.log('[Player] Loading TikTok embed:', embedUrl);
+            
+            ttContainer.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+            setMode('tiktok');
+            
+            // Fallback if embed fails to load
+            setTimeout(() => {
+                const iframe = ttContainer.querySelector('iframe');
+                if (iframe && !iframe.contentDocument) {
+                    console.warn('[Player] Embed may have failed, showing fallback');
+                    showTikTokFallback(rec, rec.video_url);
                 }
-            } catch (e) {
-                console.error('[Player] TikTok play resolution failed:', e);
-            }
-
-            if (playUrl) {
-                console.log('[Player] Setting video src:', playUrl.substring(0, 80));
-                setMode('tiktok');
-                video.onerror = (e) => {
-                    console.error('[Player] Video element error:', e);
-                    showTikTokFallback(rec, watchUrl);
-                };
-                video.src = playUrl;
-                video.load();
-                playPauseBtn.textContent = '⏸';
-                video.play().catch((e) => { 
-                    console.warn('[Player] Autoplay blocked:', e.message);
-                    /* autoplay blocked: user presses play */ 
-                });
-            } else {
-                console.warn('[Player] No play URL, showing fallback');
-                // No direct stream (deleted/bot-walled): keep the card
-                // reachable via the existing Watch-on-TikTok fallback
-                showTikTokFallback(rec, watchUrl);
-            }
+            }, 5000);
         }
 
         // ===== UP NEXT (dynamic, mixed, allowlisted) =====
