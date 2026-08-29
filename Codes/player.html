@@ -459,6 +459,18 @@
             background: #000;
         }
 
+        .video-wrapper .video-element {
+            display: none;
+        }
+
+        .video-wrapper.mode-tiktok .video-element {
+            display: block;
+        }
+
+        .video-wrapper.mode-youtube .video-element {
+            display: none;
+        }
+
         /* Back Button */
         .back-btn {
             position: absolute;
@@ -1182,6 +1194,9 @@
                     <span class="back-label">Back</span>
                 </div>
 
+                <!-- Native video element for TikTok (when using direct MP4) -->
+                <video id="video" class="video-element" playsinline></video>
+
                 <!-- TikTok embed iframe (official TikTok player) -->
                 <div id="ttContainer" style="display: none;"></div>
 
@@ -1290,7 +1305,6 @@
         </div>
     </div>
 
-    <script src="/Codes/script.js"></script>
 
 
     <script>
@@ -2333,6 +2347,10 @@
             setTimeout(() => loader.remove(), 400);
         });
     </script>
+
+
+    <script src="/Codes/script.js"></script>
+
 
 </body>
 

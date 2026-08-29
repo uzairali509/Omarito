@@ -1,11 +1,13 @@
 const cron = require("node-cron");
 const { exec } = require("child_process");
+const { loadRankingsFromDB, getRankings } = require("./services/rankingService");
 
 console.log("🕒 Cron jobs started...");
 
 // Prevent overlapping sync jobs
 let isSyncRunning = false;
 let isPlaylistSyncRunning = false;
+let isAccountStatsRefreshRunning = false;
 
 // Configurable sync interval from .env (default 15 minutes)
 const SYNC_INTERVAL_MINUTES = parseInt(process.env.TIKTOK_SYNC_INTERVAL_MINUTES || "15", 10);
@@ -34,18 +36,35 @@ cron.schedule(SYNC_CRON_PATTERN, () => {
   });
 });
 
-// Rankings cache warm-up on startup and every N hours (configurable)
-// This just ensures the in-memory cache is populated after a server restart.
-const RANKINGS_CACHE_MINUTES = parseInt(process.env.RANKINGS_CACHE_MINUTES || "60", 10);
-const RANKINGS_CRON = `0 */${Math.max(1, Math.round(RANKINGS_CACHE_MINUTES / 60))} * * *`;
-setTimeout(() => {
-  // Warm up rankings cache 8 seconds after startup
-  const { loadRankingsCache } = (() => {
-    try { return require("./routes/socialRoutes"); } catch(e) { return {}; }
-  })();
-  if (typeof loadRankingsCache === "function") {
-    loadRankingsCache().catch(e => console.error("[cron] Rankings cache warm-up failed:", e.message));
+// Account statistics refresh (followers, likes) for @omari.to
+const ACCOUNT_STATS_REFRESH_HOURS = parseInt(process.env.ACCOUNT_STATS_REFRESH_INTERVAL_HOURS || "6", 10);
+const ACCOUNT_STATS_CRON = `0 */${ACCOUNT_STATS_REFRESH_HOURS} * * *`;
+
+console.log(`📊 Account stats refresh interval: ${ACCOUNT_STATS_REFRESH_HOURS} hours`);
+
+cron.schedule(ACCOUNT_STATS_CRON, () => {
+  if (isAccountStatsRefreshRunning) {
+    console.log("⏳ Account stats refresh already running, skipping");
+    return;
   }
+  console.log("🔄 Refreshing TikTok account statistics for @omari.to...");
+  isAccountStatsRefreshRunning = true;
+
+  exec("node scripts/refreshAccountStats.js", (error, stdout, stderr) => {
+    isAccountStatsRefreshRunning = false;
+    if (error) {
+      console.error("❌ Account stats refresh error:", error);
+    } else {
+      console.log("✅ Account stats refresh completed");
+      if (stdout) console.log(stdout.trim());
+    }
+  });
+});
+
+// Rankings cache warm-up on startup using rankingService
+setTimeout(() => {
+  console.log("🔄 Warming up rankings cache...");
+  loadRankingsFromDB().catch(e => console.error("[cron] Rankings cache warm-up failed:", e.message));
 }, 8000);
 
 // Playlist sync runs once every 6 hours (playlists change rarely)
@@ -103,3 +122,34 @@ if (process.env.RUN_INITIAL_SYNC === "true") {
 } else {
   console.log("ℹ️ Initial sync disabled. Set RUN_INITIAL_SYNC=true to enable.");
 }
+
+// Rankings refresh (configurable interval, default 6 hours)
+const RANKINGS_REFRESH_HOURS = parseInt(process.env.RANKINGS_REFRESH_INTERVAL_HOURS || "6", 10);
+const RANKINGS_CRON = `0 */${RANKINGS_REFRESH_HOURS} * * *`;
+
+console.log(`🏆 Rankings refresh interval: ${RANKINGS_REFRESH_HOURS} hours`);
+
+let isRankingsRefreshRunning = false;
+
+cron.schedule(RANKINGS_CRON, async () => {
+  if (isRankingsRefreshRunning) {
+    console.log("⏳ Rankings refresh already running, skipping");
+    return;
+  }
+  console.log("🔄 Refreshing TikTok rankings for @omari.to...");
+  isRankingsRefreshRunning = true;
+
+  try {
+    // getRankings will attempt to fetch from real provider and update cache/DB
+    const result = await getRankings();
+    if (result.success) {
+      console.log("✅ Rankings refresh completed:", result.rankings);
+    } else {
+      console.log("ℹ️ Rankings refresh: no provider configured or no data available");
+    }
+  } catch (err) {
+    console.error("❌ Rankings refresh error:", err.message);
+  } finally {
+    isRankingsRefreshRunning = false;
+  }
+});

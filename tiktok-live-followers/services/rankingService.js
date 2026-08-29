@@ -1,7 +1,4 @@
-const axios = require("axios");
 const Ranking = require("../models/Ranking");
-
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
 // In-memory cache for rankings
 let rankingCache = {
@@ -14,96 +11,34 @@ let rankingCache = {
 const RANKINGS_CACHE_TTL = parseInt(process.env.RANKINGS_CACHE_MINUTES || "360", 10) * 60 * 1000;
 
 /**
- * Fetch TikTok rankings from RapidAPI (Social Blade)
- * Returns { asia: number, world: number, kazakhstan: number } or null
+ * Fetch TikTok rankings from a real provider.
+ * Currently no free provider is available - this function returns null.
+ * When a real provider is configured, implement the fetch logic here.
+ * 
+ * Required provider capabilities:
+ * - Must provide actual Asia ranking for @omari.to
+ * - Must provide actual World ranking for @omari.to
+ * - Must provide actual Kazakhstan ranking for @omari.to
+ * - Must use documented methodology (not approximations)
+ * 
+ * Potential providers to integrate:
+ * - TikTok Business/Creator API (requires approval)
+ * - Social Blade API (requires paid subscription)
+ * - TikTok Business/Creator Marketplace API
+ * - Other legitimate social analytics APIs with ranking endpoints
+ * 
+ * @returns {Promise<{asia: number, world: number, kazakhstan: number} | null>}
  */
-async function fetchRankingsFromRapidAPI() {
-    if (!RAPIDAPI_KEY) {
-        console.log("[rankings] RapidAPI key not configured, skipping");
-        return null;
-    }
-
-    try {
-        console.log("[rankings] Fetching TikTok rankings via RapidAPI (Social Blade)...");
-        
-        // Try to get global TikTok rankings from Social Blade
-        const { data } = await axios.get("https://social-blade1.p.rapidapi.com/tiktok/top", {
-            timeout: 15000,
-            headers: {
-                "X-RapidAPI-Key": RAPIDAPI_KEY,
-                "X-RapidAPI-Host": "social-blade1.p.rapidapi.com"
-            },
-            params: { limit: 50 }
-        });
-
-        console.log("[rankings] RapidAPI top TikTok response received");
-
-        // Find @omari.to in the rankings
-        let asiaRank = null;
-        let worldRank = null;
-        let kazakhstanRank = null;
-
-        if (data && Array.isArray(data)) {
-            // Find @omari.to in the list
-            const omariIndex = data.findIndex(item => 
-                item.username?.toLowerCase() === "omari.to" || 
-                item.name?.toLowerCase().includes("omari.to")
-            );
-
-            if (omariIndex >= 0) {
-                worldRank = omariIndex + 1;
-                console.log("[rankings] Found @omari.to at world rank:", worldRank);
-            }
-
-            // For Asia rank, we'd need regional data - for now use world rank as approximation
-            // or try to get regional data if available
-            if (worldRank) {
-                // Rough approximation: Asia rank is typically similar to world rank for top creators
-                // In a real implementation, you'd fetch Asia-specific rankings
-                asiaRank = worldRank;
-            }
-
-            // For Kazakhstan, if the creator is from Kazakhstan, they might be #1 there
-            if (worldRank && worldRank <= 10) {
-                kazakhstanRank = 1; // Top creator from Kazakhstan
-            }
-        }
-
-        // If we couldn't find via top list, try searching for the specific user
-        if (!worldRank) {
-            try {
-                console.log("[rankings] Searching for @omari.to specifically...");
-                const { data: userData } = await axios.get("https://social-blade1.p.rapidapi.com/tiktok/user", {
-                    timeout: 10000,
-                    headers: {
-                        "X-RapidAPI-Key": RAPIDAPI_KEY,
-                        "X-RapidAPI-Host": "social-blade1.p.rapidapi.com"
-                    },
-                    params: { username: "omari.to" }
-                });
-
-                if (userData && userData.rank) {
-                    worldRank = parseInt(userData.rank, 10);
-                    console.log("[rankings] Found @omari.to world rank via user lookup:", worldRank);
-                    asiaRank = worldRank; // Approximation
-                    kazakhstanRank = worldRank <= 10 ? 1 : null;
-                }
-            } catch (e) {
-                console.log("[rankings] User lookup failed:", e.message);
-            }
-        }
-
-        if (worldRank) {
-            return { asia: asiaRank, world: worldRank, kazakhstan: kazakhstanRank };
-        }
-        return null;
-    } catch (err) {
-        console.error("[rankings] RapidAPI rankings fetch failed:", err.message);
-        if (err.response) {
-            console.error("[rankings] Response status:", err.response.status);
-        }
-        return null;
-    }
+async function fetchRankingsFromProvider() {
+    // TODO: Implement when a real ranking provider is configured
+    // Currently no free ranking provider is available:
+    // - TikTok ranking endpoints return 503/"url doesn't match"
+    // - RapidAPI Social Blade returns 403 (not subscribed)
+    // - Other RapidAPI TikTok endpoints return 403/404
+    // - Apify TikTok scraper doesn't provide rankings
+    
+    console.log("[rankings] No ranking provider configured — returning null");
+    return null;
 }
 
 /**
@@ -122,13 +57,21 @@ async function loadRankingsFromDB() {
         const world = map["tiktok_world"] ? map["tiktok_world"].rank : null;
         const kazakhstan = map["tiktok_kazakhstan"] ? map["tiktok_kazakhstan"].rank : null;
 
-        if (asia !== null || world !== null || kazakhstan !== null) {
+        // Only load if we have valid data from a real provider (not seed values)
+        const hasRealData = (asia !== null && map["tiktok_asia"]?.source === "provider") ||
+                           (world !== null && map["tiktok_world"]?.source === "provider") ||
+                           (kazakhstan !== null && map["tiktok_kazakhstan"]?.source === "provider");
+
+        if (hasRealData) {
             rankingCache = {
                 loaded: true,
                 rankings: { asia, world, kazakhstan },
                 lastUpdated: new Date()
             };
-            console.log("[rankings] Loaded from DB:", rankingCache.rankings);
+            console.log("[rankings] Loaded real provider data from DB:", rankingCache.rankings);
+        } else {
+            console.log("[rankings] No real provider data in DB (only seed/admin values)");
+            rankingCache.loaded = false;
         }
         return rankingCache;
     } catch (err) {
@@ -139,57 +82,52 @@ async function loadRankingsFromDB() {
 
 /**
  * Get current rankings (with cache)
- * Tries RapidAPI first, then falls back to DB
+ * Tries real provider first. If no provider configured, returns null.
+ * Only uses DB cache if data came from a real provider.
  */
 async function getRankings() {
-    const now = Date.now();
-    const cacheStale = !rankingCache.loaded ||
-        !rankingCache.lastUpdated ||
-        (now - rankingCache.lastUpdated.getTime()) > RANKINGS_CACHE_TTL;
+    // Try to fetch fresh rankings from real provider
+    const freshRankings = await fetchRankingsFromProvider();
 
-    if (cacheStale) {
-        // Try to fetch fresh rankings from RapidAPI
-        const freshRankings = await fetchRankingsFromRapidAPI();
-        
-        if (freshRankings && (freshRankings.asia || freshRankings.world || freshRankings.kazakhstan)) {
-            // Update DB with fresh rankings
-            try {
-                for (const [platform, rank] of Object.entries(freshRankings)) {
-                    if (rank) {
-                        const platformMap = {
-                            asia: "tiktok_asia",
-                            world: "tiktok_world",
-                            kazakhstan: "tiktok_kazakhstan"
-                        };
-                        await Ranking.findOneAndUpdate(
-                            { platform: platformMap[platform] },
-                            { 
-                                platform: platformMap[platform], 
-                                rank, 
-                                lastUpdated: new Date(), 
-                                source: "rapidapi" 
-                            },
-                            { upsert: true }
-                        );
-                    }
-                }
-                
-                rankingCache = {
-                    loaded: true,
-                    rankings: freshRankings,
-                    lastUpdated: new Date()
+    if (freshRankings && (freshRankings.asia || freshRankings.world || freshRankings.kazakhstan)) {
+        // Update DB with fresh rankings from real provider
+        for (const [platform, rank] of Object.entries(freshRankings)) {
+            if (rank) {
+                const platformMap = {
+                    asia: "tiktok_asia",
+                    world: "tiktok_world",
+                    kazakhstan: "tiktok_kazakhstan"
                 };
-                console.log("[rankings] Updated from RapidAPI:", rankingCache.rankings);
-            } catch (err) {
-                console.error("[rankings] Failed to save fresh rankings:", err.message);
+                try {
+                    await Ranking.findOneAndUpdate(
+                        { platform: platformMap[platform] },
+                        { 
+                            platform: platformMap[platform], 
+                            rank, 
+                            lastUpdated: new Date(), 
+                            source: "provider" 
+                        },
+                        { upsert: true }
+                    );
+                } catch (err) {
+                    console.error("[rankings] DB update error:", err.message);
+                }
             }
-        } else {
-            // Fall back to DB
+            
+            rankingCache = {
+                loaded: true,
+                rankings: freshRankings,
+                lastUpdated: new Date()
+            };
+            console.log("[rankings] Updated from real provider:", rankingCache.rankings);
+        }
+    } else {
+            // No provider configured or provider returned no data
+            // Load from DB only if we have real provider data cached
             await loadRankingsFromDB();
         }
-    }
 
-    // If still no valid data, return null values (frontend will show "Updating...")
+    // If no valid data from real provider, return null (frontend shows "Updating...")
     if (!rankingCache.loaded || 
         (rankingCache.rankings.asia === null && 
          rankingCache.rankings.world === null && 
@@ -198,7 +136,7 @@ async function getRankings() {
             success: false,
             rankings: { asia: null, world: null, kazakhstan: null },
             lastUpdated: null,
-            message: "No ranking data available. Run: node scripts/seedRankings.js"
+            message: "No ranking provider configured. Configure a real ranking provider (e.g., TikTok Business API, Social Blade subscription) to display rankings."
         };
     }
 
@@ -235,7 +173,7 @@ async function updateRanking(platform, rank) {
 }
 
 module.exports = {
-    fetchRankingsFromRapidAPI,
+    fetchRankingsFromProvider,
     loadRankingsFromDB,
     getRankings,
     updateRanking,

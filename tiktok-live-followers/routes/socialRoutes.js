@@ -1,9 +1,44 @@
 const express = require("express");
 const router = express.Router();
-const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 const Video = require("../models/Video");
 const { fetchFreshThumbnail, isUsable } = require("../services/thumbnailService");
 const { getRankings, updateRanking } = require("../services/rankingService");
+
+// Cache file path for account statistics
+const ACCOUNT_STATS_CACHE_FILE = path.join(__dirname, "..", "accountStatsCache.json");
+
+// Read account stats from cache file
+function readAccountStatsCache() {
+    try {
+        if (fs.existsSync(ACCOUNT_STATS_CACHE_FILE)) {
+            const data = fs.readFileSync(ACCOUNT_STATS_CACHE_FILE, "utf8");
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error("[tiktok-data] Failed to read cache file:", e.message);
+    }
+    return null;
+}
+
+// Write account stats to cache file
+function writeAccountStatsCache(data) {
+    try {
+        fs.writeFileSync(ACCOUNT_STATS_CACHE_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error("[tiktok-data] Failed to write cache file:", e.message);
+    }
+}
+
+// Load cache from file on startup (NO static baselines)
+let tiktokProfileCache = readAccountStatsCache() || {
+    followers: 0,
+    likes: 0,
+    views: 0,
+    updatedAt: null,
+    source: "none"
+};
 
 // =======================
 // ALLOWLIST & HELPERS
@@ -77,250 +112,60 @@ function isStreamUsable(url) {
 // =======================
 // GET /tiktok-data
 // Homepage follower + like counts for @omari.to
-// Scrapes REAL account-level stats from TikTok profile pages
+// Data is refreshed by cron job (scripts/refreshAccountStats.js) via Apify
 // =======================
-
-// In-memory cache for account-level stats (refreshed every 30 min)
-let tiktokProfileCache = {
-    followers: 59000000, // Known baseline for @omari.to (59M)
-    likes: 781000000, // Known baseline for @omari.to (781M total likes)
-    views: 0,
-    updatedAt: null
-};
-const PROFILE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-// Fetch TikTok stats via RapidAPI (Social Blade) as fallback
-async function fetchTikTokStatsViaRapidAPI(handle) {
-    const rapidApiKey = process.env.RAPIDAPI_KEY;
-    if (!rapidApiKey) {
-        console.log("[tiktok-data] RapidAPI key not configured, skipping");
-        return null;
-    }
-
-    try {
-        console.log("[tiktok-data] Fetching TikTok stats via RapidAPI for @" + handle);
-        const { data } = await axios.get("https://social-blade1.p.rapidapi.com/tiktok/user", {
-            timeout: 10000,
-            headers: {
-                "X-RapidAPI-Key": rapidApiKey,
-                "X-RapidAPI-Host": "social-blade1.p.rapidapi.com"
-            },
-            params: { username: handle }
-        });
-
-        console.log("[tiktok-data] RapidAPI response:", JSON.stringify(data).substring(0, 200));
-
-        // Parse the response - structure may vary
-        let followers = 0;
-        let likes = 0;
-
-        if (data?.followers) {
-            followers = parseInt(data.followers.toString().replace(/,/g, ''), 10);
-        } else if (data?.data?.followers) {
-            followers = parseInt(data.data.followers.toString().replace(/,/g, ''), 10);
-        }
-
-        if (data?.likes || data?.hearts) {
-            likes = parseInt((data.likes || data.hearts).toString().replace(/,/g, ''), 10);
-        } else if (data?.data?.likes || data?.data?.hearts) {
-            likes = parseInt((data.data.likes || data.data.hearts).toString().replace(/,/g, ''), 10);
-        }
-
-        // Also try total_likes field
-        if (likes === 0 && data?.total_likes) {
-            likes = parseInt(data.total_likes.toString().replace(/,/g, ''), 10);
-        } else if (likes === 0 && data?.data?.total_likes) {
-            likes = parseInt(data.data.total_likes.toString().replace(/,/g, ''), 10);
-        }
-
-        console.log("[tiktok-data] RapidAPI Extracted: followers=" + followers + " likes=" + likes);
-
-        if (followers > 0 && likes > 0) {
-            return { followers, likes };
-        }
-        return null;
-    } catch (err) {
-        console.error("[tiktok-data] RapidAPI fetch failed:", err.message);
-        if (err.response) {
-            console.error("[tiktok-data] RapidAPI Response status:", err.response.status);
-            console.error("[tiktok-data] RapidAPI Response data:", err.response.data);
-        }
-        return null;
-    }
-}
-
-// Scrape real account-level stats from TikTok profile page
-async function fetchRealProfileStats(handle) {
-    try {
-        console.log("[tiktok-data] Scraping TikTok profile for @" + handle);
-        const { data: html } = await axios.get(`https://www.tiktok.com/@${handle}`, {
-            timeout: 15000,
-            maxContentLength: 10 * 1024 * 1024,
-            responseType: "text",
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9"
-            }
-        });
-
-        console.log("[tiktok-data] HTML received, length:", typeof html === "string" ? html.length : typeof html);
-
-        // Extract real account-level stats from the HTML
-        // Try multiple patterns as TikTok's HTML structure may vary
-        const patterns = {
-            followers: [
-                /"followerCount"[\s:]*(\d+)/i,
-                /"followerCount"\s*:\s*(\d+)/i,
-                /followerCount["\s:]+(\d+)/i,
-                /"stats"[\s\S]{0,100}"followerCount"[\s:]*(\d+)/i,
-            ],
-            likes: [
-                /"heartCount"[\s:]*(\d+)/i,
-                /"heartCount"\s*:\s*(\d+)/i,
-                /"totalFavorited"[\s:]*(\d+)/i,
-                /"totalFavorited"\s*:\s*(\d+)/i,
-                /heartCount["\s:]+(\d+)/i,
-                /"stats"[\s\S]{0,100}"heartCount"[\s:]*(\d+)/i,
-            ]
-        };
-
-        let followers = 0;
-        let likes = 0;
-
-        // Try each pattern for followers
-        for (const pattern of patterns.followers) {
-            const match = html.match(pattern);
-            if (match && match[1]) {
-                followers = parseInt(match[1], 10);
-                if (followers > 0) break;
-            }
-        }
-
-        // Try each pattern for likes
-        for (const pattern of patterns.likes) {
-            const match = html.match(pattern);
-            if (match && match[1]) {
-                likes = parseInt(match[1], 10);
-                if (likes > 0) break;
-            }
-        }
-
-        // Also try to extract from __UNIVERSAL_DATA_FOR_REHYDRATION__ script tag
-        if (followers === 0 || likes === 0) {
-            try {
-                const universalDataMatch = html.match(/__UNIVERSAL_DATA_FOR_REHYDRATION__\s*=\s*(\{[\s\S]*?\});/);
-                if (universalDataMatch) {
-                    const universalData = JSON.parse(universalDataMatch[1]);
-                    // Navigate to user stats
-                    const userData = universalData?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo;
-                    if (userData) {
-                        if (followers === 0 && userData.stats?.followerCount) {
-                            followers = parseInt(userData.stats.followerCount, 10);
-                        }
-                        if (likes === 0 && userData.stats?.heartCount) {
-                            likes = parseInt(userData.stats.heartCount, 10);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log("[tiktok-data] Universal data parsing failed:", e.message);
-            }
-        }
-
-        console.log("[tiktok-data] Extracted: followers=" + followers + " likes=" + likes);
-        
-        // Only return if we got valid data (followers > 0)
-        if (followers > 0 && likes > 0) {
-            return { followers, likes };
-        }
-        return null;
-    } catch (err) {
-        console.error("[tiktok-data] TikTok profile scrape failed:", err.message);
-        if (err.response) {
-            console.error("[tiktok-data] Response status:", err.response.status);
-        }
-        return null;
-    }
-}
 
 router.get("/tiktok-data", async (req, res) => {
     try {
-        const now = Date.now();
-        const cacheValid = tiktokProfileCache.updatedAt &&
-            (now - tiktokProfileCache.updatedAt) < PROFILE_CACHE_TTL;
+        // Always read fresh from cache file to get latest refreshed values
+        const fileCache = readAccountStatsCache();
+        if (fileCache) {
+            tiktokProfileCache = fileCache;
+        }
 
-        if (cacheValid) {
-            // Return cached stats (includes baseline followers if scrape failed)
+        // If no valid data ever fetched, return updating state
+        if (!tiktokProfileCache.followers || !tiktokProfileCache.likes) {
             return res.json({
-                followers: tiktokProfileCache.followers,
-                likes: tiktokProfileCache.likes,
-                views: tiktokProfileCache.views
+                followers: 0,
+                likes: 0,
+                views: 0,
+                updating: true
             });
         }
 
-        // Fetch REAL account-level stats from TikTok (try scraping first)
-        let profileStats = await fetchRealProfileStats("omari.to");
+        // Return cached stats (refreshed by cron job every 6 hours via Apify)
+        const viewStats = await Video.aggregate([
+            { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
+            { $group: { _id: null, totalViews: { $sum: "$views" } } }
+        ]);
+        const totalViews = (viewStats[0] && viewStats[0].totalViews) || 0;
 
-        // If scraping fails, try RapidAPI as fallback
-        if (!profileStats || profileStats.followers === 0) {
-            console.log("[tiktok-data] Direct scrape failed, trying RapidAPI fallback...");
-            profileStats = await fetchTikTokStatsViaRapidAPI("omari.to");
-        }
-
-        if (profileStats && profileStats.followers > 0) {
-            // Also get aggregated views from DB (TikTok page doesn't expose total views)
-            const viewStats = await Video.aggregate([
-                { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
-                { $group: { _id: null, totalViews: { $sum: "$views" } } }
-            ]);
-            const totalViews = (viewStats[0] && viewStats[0].totalViews) || 0;
-
-            // Update cache with real values
-            tiktokProfileCache = {
-                followers: profileStats.followers,
-                likes: profileStats.likes,
-                views: totalViews,
-                updatedAt: now
-            };
-
-            res.json({
-                followers: profileStats.followers,
-                likes: profileStats.likes,
-                views: totalViews
-            });
-        } else {
-            // Both sources failed — return cached baseline followers (59M) + baseline likes (781M) + DB aggregated views
-            console.log("[tiktok-data] All sources failed, using cached baseline followers + baseline likes + DB aggregated views");
-            
-            const stats = await Video.aggregate([
-                { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
-                { $group: { _id: null, totalViews: { $sum: "$views" } } }
-            ]);
-            
-            const totalViews = (stats[0] && stats[0].totalViews) || 0;
-
-            // Update cache with baseline followers + baseline likes + DB views
-            tiktokProfileCache = {
-                followers: tiktokProfileCache.followers, // Keep baseline (59M)
-                likes: tiktokProfileCache.likes, // Keep baseline (781M)
-                views: totalViews,
-                updatedAt: now
-            };
-
-            res.json({
-                followers: tiktokProfileCache.followers,
-                likes: tiktokProfileCache.likes,
-                views: totalViews
-            });
-        }
+        res.json({
+            followers: tiktokProfileCache.followers,
+            likes: tiktokProfileCache.likes,
+            views: totalViews,
+            updatedAt: tiktokProfileCache.updatedAt,
+            source: tiktokProfileCache.source
+        });
     } catch (err) {
         console.error("GET /tiktok-data error:", err);
-        // On error, return cached baseline followers if available
-        res.json({ 
-            followers: tiktokProfileCache.followers || 59000000, 
-            likes: tiktokProfileCache.likes || 0, 
-            views: tiktokProfileCache.views || 0 
+        // On error, try to read from cache file
+        const fileCache = readAccountStatsCache();
+        if (fileCache && fileCache.followers && fileCache.likes) {
+            return res.json({
+                followers: fileCache.followers,
+                likes: fileCache.likes,
+                views: fileCache.views || 0,
+                updatedAt: fileCache.updatedAt,
+                source: fileCache.source
+            });
+        }
+        // No valid data available
+        res.json({
+            followers: 0,
+            likes: 0,
+            views: 0,
+            updating: true
         });
     }
 });
@@ -359,8 +204,10 @@ router.post("/tiktok-data/update", async (req, res) => {
             followers: followers !== undefined ? Number(followers) : tiktokProfileCache.followers,
             likes: likes !== undefined ? Number(likes) : tiktokProfileCache.likes,
             views: totalViews,
-            updatedAt: now
+            updatedAt: now,
+            source: "admin"
         };
+        writeAccountStatsCache(tiktokProfileCache);
 
         console.log("[tiktok-data] Manual update:", { 
             followers: tiktokProfileCache.followers, 
@@ -806,4 +653,3 @@ router.get("/tiktok-grid-videos", async (req, res) => {
 });
 
 module.exports = router;
-module.exports.loadRankingsCache = loadRankingsFromDB;
