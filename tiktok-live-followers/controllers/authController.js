@@ -3,7 +3,11 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend = null;
+function getResend() {
+    if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || "missing_key");
+    return _resend;
+}
 const Message = require("../models/Message");
 
 
@@ -340,7 +344,7 @@ const sendResetCode = async (req, res) => {
 
 
         // SEND MAIL
-        await resend.emails.send({
+        await getResend().emails.send({
 
             from: "onboarding@resend.dev",
 

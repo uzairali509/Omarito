@@ -1,7 +1,44 @@
 const express = require("express");
 const router = express.Router();
-const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 const Video = require("../models/Video");
+const { fetchFreshThumbnail, isUsable } = require("../services/thumbnailService");
+const { getRankings, updateRanking } = require("../services/rankingService");
+
+// Cache file path for account statistics
+const ACCOUNT_STATS_CACHE_FILE = path.join(__dirname, "..", "accountStatsCache.json");
+
+// Read account stats from cache file
+function readAccountStatsCache() {
+    try {
+        if (fs.existsSync(ACCOUNT_STATS_CACHE_FILE)) {
+            const data = fs.readFileSync(ACCOUNT_STATS_CACHE_FILE, "utf8");
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error("[tiktok-data] Failed to read cache file:", e.message);
+    }
+    return null;
+}
+
+// Write account stats to cache file
+function writeAccountStatsCache(data) {
+    try {
+        fs.writeFileSync(ACCOUNT_STATS_CACHE_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error("[tiktok-data] Failed to write cache file:", e.message);
+    }
+}
+
+// Load cache from file on startup (NO static baselines)
+let tiktokProfileCache = readAccountStatsCache() || {
+    followers: 0,
+    likes: 0,
+    views: 0,
+    updatedAt: null,
+    source: "none"
+};
 
 // =======================
 // ALLOWLIST & HELPERS
@@ -75,223 +112,137 @@ function isStreamUsable(url) {
 // =======================
 // GET /tiktok-data
 // Homepage follower + like counts for @omari.to
-// Scrapes REAL account-level stats from TikTok profile pages
+// Data is refreshed by cron job (scripts/refreshAccountStats.js) via Apify
 // =======================
-
-// In-memory cache for account-level stats (refreshed every 30 min)
-let tiktokProfileCache = {
-    followers: 59000000, // Known baseline for @omari.to (59M)
-    likes: 781000000, // Known baseline for @omari.to (781M total likes)
-    views: 0,
-    updatedAt: null
-};
-const PROFILE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-// Scrape real account-level stats from TikTok profile page
-async function fetchRealProfileStats(handle) {
-    try {
-        console.log("[tiktok-data] Scraping TikTok profile for @" + handle);
-        const { data: html } = await axios.get(`https://www.tiktok.com/@${handle}`, {
-            timeout: 15000,
-            maxContentLength: 10 * 1024 * 1024,
-            responseType: "text",
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9"
-            }
-        });
-
-        console.log("[tiktok-data] HTML received, length:", typeof html === "string" ? html.length : typeof html);
-
-        // Extract real account-level stats from the HTML
-        const followerMatch = html.match(/"followerCount"[\s:]*(\d+)/i);
-        const heartMatch = html.match(/"heartCount"[\s:]*(\d+)/i)
-                      || html.match(/"totalFavorited"[\s:]*(\d+)/i);
-
-        const followers = followerMatch ? parseInt(followerMatch[1], 10) : 0;
-        const likes = heartMatch ? parseInt(heartMatch[1], 10) : 0;
-
-        console.log("[tiktok-data] Extracted: followers=" + followers + " likes=" + likes);
-        
-        // Only return if we got valid data (followers > 0)
-        if (followers > 0 && likes > 0) {
-            return { followers, likes };
-        }
-        return null;
-    } catch (err) {
-        console.error("[tiktok-data] TikTok profile scrape failed:", err.message);
-        if (err.response) {
-            console.error("[tiktok-data] Response status:", err.response.status);
-        }
-        return null;
-    }
-}
 
 router.get("/tiktok-data", async (req, res) => {
     try {
-        const now = Date.now();
-        const cacheValid = tiktokProfileCache.updatedAt &&
-            (now - tiktokProfileCache.updatedAt) < PROFILE_CACHE_TTL;
+        // Always read fresh from cache file to get latest refreshed values
+        const fileCache = readAccountStatsCache();
+        if (fileCache) {
+            tiktokProfileCache = fileCache;
+        }
 
-        if (cacheValid) {
-            // Return cached stats (includes baseline followers if scrape failed)
+        // If no valid data ever fetched, return updating state
+        if (!tiktokProfileCache.followers || !tiktokProfileCache.likes) {
             return res.json({
-                followers: tiktokProfileCache.followers,
-                likes: tiktokProfileCache.likes,
-                views: tiktokProfileCache.views
+                followers: 0,
+                likes: 0,
+                views: 0,
+                updating: true
             });
         }
 
-        // Fetch REAL account-level stats from TikTok
-        const profileStats = await fetchRealProfileStats("omari.to");
+        // Return cached stats (refreshed by cron job every 6 hours via Apify)
+        const viewStats = await Video.aggregate([
+            { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
+            { $group: { _id: null, totalViews: { $sum: "$views" } } }
+        ]);
+        const totalViews = (viewStats[0] && viewStats[0].totalViews) || 0;
 
-        if (profileStats && profileStats.followers > 0) {
-            // Also get aggregated views from DB (TikTok page doesn't expose total views)
-            const viewStats = await Video.aggregate([
-                { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
-                { $group: { _id: null, totalViews: { $sum: "$views" } } }
-            ]);
-            const totalViews = (viewStats[0] && viewStats[0].totalViews) || 0;
-
-            // Update cache with real values
-            tiktokProfileCache = {
-                followers: profileStats.followers,
-                likes: profileStats.likes,
-                views: totalViews,
-                updatedAt: now
-            };
-
-            res.json({
-                followers: profileStats.followers,
-                likes: profileStats.likes,
-                views: totalViews
-            });
-        } else {
-            // Scrape failed — return cached baseline followers (59M) + baseline likes (781M) + DB aggregated views
-            console.log("[tiktok-data] Using cached baseline followers + baseline likes + DB aggregated views");
-            
-            const stats = await Video.aggregate([
-                { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
-                { $group: { _id: null, totalViews: { $sum: "$views" } } }
-            ]);
-            
-            const totalViews = (stats[0] && stats[0].totalViews) || 0;
-
-            // Update cache with baseline followers + baseline likes + DB views
-            tiktokProfileCache = {
-                followers: tiktokProfileCache.followers, // Keep baseline (59M)
-                likes: tiktokProfileCache.likes, // Keep baseline (781M)
-                views: totalViews,
-                updatedAt: now
-            };
-
-            res.json({
-                followers: tiktokProfileCache.followers,
-                likes: tiktokProfileCache.likes,
-                views: totalViews
-            });
-        }
+        res.json({
+            followers: tiktokProfileCache.followers,
+            likes: tiktokProfileCache.likes,
+            views: totalViews,
+            updatedAt: tiktokProfileCache.updatedAt,
+            source: tiktokProfileCache.source
+        });
     } catch (err) {
         console.error("GET /tiktok-data error:", err);
-        // On error, return cached baseline followers if available
-        res.json({ 
-            followers: tiktokProfileCache.followers || 59000000, 
-            likes: tiktokProfileCache.likes || 0, 
-            views: tiktokProfileCache.views || 0 
+        // On error, try to read from cache file
+        const fileCache = readAccountStatsCache();
+        if (fileCache && fileCache.followers && fileCache.likes) {
+            return res.json({
+                followers: fileCache.followers,
+                likes: fileCache.likes,
+                views: fileCache.views || 0,
+                updatedAt: fileCache.updatedAt,
+                source: fileCache.source
+            });
+        }
+        // No valid data available
+        res.json({
+            followers: 0,
+            likes: 0,
+            views: 0,
+            updating: true
         });
+    }
+});
+
+// =======================
+// POST /tiktok-data/update
+// Admin endpoint to manually update @omari.to follower/like counts
+// Body: { followers: <number>, likes: <number> }
+// =======================
+router.post("/tiktok-data/update", async (req, res) => {
+    try {
+        const { followers, likes } = req.body;
+        
+        if (followers === undefined && likes === undefined) {
+            return res.status(400).json({ success: false, error: "Provide followers and/or likes" });
+        }
+        
+        if (followers !== undefined && (isNaN(Number(followers)) || Number(followers) < 0)) {
+            return res.status(400).json({ success: false, error: "followers must be a positive number" });
+        }
+        if (likes !== undefined && (isNaN(Number(likes)) || Number(likes) < 0)) {
+            return res.status(400).json({ success: false, error: "likes must be a positive number" });
+        }
+
+        const now = Date.now();
+        
+        // Get current aggregated views from DB
+        const stats = await Video.aggregate([
+            { $match: { webVideoUrl: handleRegex("omari.to"), isActive: true } },
+            { $group: { _id: null, totalViews: { $sum: "$views" } } }
+        ]);
+        const totalViews = (stats[0] && stats[0].totalViews) || 0;
+
+        // Update cache
+        tiktokProfileCache = {
+            followers: followers !== undefined ? Number(followers) : tiktokProfileCache.followers,
+            likes: likes !== undefined ? Number(likes) : tiktokProfileCache.likes,
+            views: totalViews,
+            updatedAt: now,
+            source: "admin"
+        };
+        writeAccountStatsCache(tiktokProfileCache);
+
+        console.log("[tiktok-data] Manual update:", { 
+            followers: tiktokProfileCache.followers, 
+            likes: tiktokProfileCache.likes,
+            views: totalViews 
+        });
+
+        res.json({ 
+            success: true, 
+            followers: tiktokProfileCache.followers,
+            likes: tiktokProfileCache.likes,
+            views: totalViews,
+            updatedAt: new Date(now).toISOString()
+        });
+    } catch (err) {
+        console.error("POST /tiktok-data/update error:", err);
+        res.status(500).json({ success: false, error: "Failed to update stats" });
     }
 });
 
 // =======================
 // GET /omari-ranking
 // Dynamic influencer rankings for the About page.
-//
-// Rankings are read from the Ranking model (MongoDB).
-// Seed or update them with:
-//   node scripts/seedRankings.js
-//   POST /omari-ranking/update  { platform, rank }
-//
-// The frontend About page expects:
-//   { success, rankings: { asia, world, kazakhstan }, lastUpdated }
+// Uses rankingService for dynamic fetching with RapidAPI fallback
 // =======================
-
-const Ranking = require("../models/Ranking");
-
-// In-memory cache to avoid a DB query on every page load
-// TTL controlled by RANKINGS_CACHE_MINUTES env var (default 60 min)
-const RANKINGS_CACHE_TTL = parseInt(process.env.RANKINGS_CACHE_MINUTES || "60", 10) * 60 * 1000;
-let rankingCache = {
-    loaded: false,
-    rankings: { asia: null, world: null, kazakhstan: null },
-    lastUpdated: null
-};
-
-async function loadRankingsFromDB() {
-    try {
-        const docs = await Ranking.find({
-            platform: { $in: ["tiktok_asia", "tiktok_world", "tiktok_kazakhstan"] }
-        }).lean();
-
-        const map = {};
-        docs.forEach(d => { map[d.platform] = d; });
-
-        const asia        = map["tiktok_asia"]        ? map["tiktok_asia"].rank        : null;
-        const world       = map["tiktok_world"]       ? map["tiktok_world"].rank       : null;
-        const kazakhstan  = map["tiktok_kazakhstan"]  ? map["tiktok_kazakhstan"].rank  : null;
-
-        // Only update cache if at least one real value exists
-        if (asia !== null || world !== null || kazakhstan !== null) {
-            rankingCache = {
-                loaded: true,
-                rankings: { asia, world, kazakhstan },
-                lastUpdated: new Date()
-            };
-            console.log("[rankings] Loaded from DB:", rankingCache.rankings);
-        }
-        return rankingCache;
-    } catch (err) {
-        console.error("[rankings] DB read failed:", err.message);
-        return rankingCache;
-    }
-}
-
 router.get("/omari-ranking", async (req, res) => {
     try {
-        const now = Date.now();
-        const cacheStale = !rankingCache.loaded ||
-            !rankingCache.lastUpdated ||
-            (now - rankingCache.lastUpdated.getTime()) > RANKINGS_CACHE_TTL;
-
-        if (cacheStale) {
-            await loadRankingsFromDB();
-        }
-
-        if (rankingCache.loaded && (
-            rankingCache.rankings.asia !== null ||
-            rankingCache.rankings.world !== null ||
-            rankingCache.rankings.kazakhstan !== null
-        )) {
-            return res.json({
-                success: true,
-                rankings: rankingCache.rankings,
-                lastUpdated: rankingCache.lastUpdated
-            });
-        }
-
-        // No ranking data seeded yet — return null values so frontend shows "Updating..."
-        res.json({
-            success: false,
-            rankings: { asia: null, world: null, kazakhstan: null },
-            lastUpdated: null,
-            message: "No ranking data available. Run: node scripts/seedRankings.js"
-        });
+        const result = await getRankings();
+        res.json(result);
     } catch (err) {
         console.error("GET /omari-ranking error:", err);
         res.json({
             success: false,
-            rankings: rankingCache.rankings,
-            lastUpdated: rankingCache.lastUpdated
+            rankings: { asia: null, world: null, kazakhstan: null },
+            lastUpdated: null
         });
     }
 });
@@ -304,29 +255,11 @@ router.get("/omari-ranking", async (req, res) => {
 router.post("/omari-ranking/update", async (req, res) => {
     try {
         const { platform, rank } = req.body;
-        const validPlatforms = ["tiktok_asia", "tiktok_world", "tiktok_kazakhstan"];
-
-        if (!validPlatforms.includes(platform)) {
-            return res.status(400).json({ success: false, error: "Invalid platform. Use: " + validPlatforms.join(", ") });
-        }
-        if (!rank || isNaN(Number(rank)) || Number(rank) < 1) {
-            return res.status(400).json({ success: false, error: "rank must be a positive number" });
-        }
-
-        const updated = await Ranking.findOneAndUpdate(
-            { platform },
-            { platform, rank: Number(rank), lastUpdated: new Date(), source: "admin" },
-            { upsert: true, returnDocument: "after" }
-        );
-
-        // Invalidate cache
-        rankingCache.loaded = false;
-        rankingCache.lastUpdated = null;
-
-        res.json({ success: true, platform, rank: Number(rank), updated });
+        const result = await updateRanking(platform, rank);
+        res.json(result);
     } catch (err) {
         console.error("POST /omari-ranking/update error:", err);
-        res.status(500).json({ success: false, error: "Failed to update ranking" });
+        res.status(500).json({ success: false, error: err.message || "Failed to update ranking" });
     }
 });
 
@@ -369,11 +302,11 @@ router.get("/omari-videos", async (req, res) => {
 // =======================
 // GET /tiktok-thumbnail
 // Proxy / redirect to a valid thumbnail image
+// Uses thumbnailService for robust fallback chain: stored URL -> oEmbed -> page scrape
 // =======================
 router.get("/tiktok-thumbnail", async (req, res) => {
     try {
         const id = String(req.query.id || "").trim();
-        const retry = req.query.retry === "1"; // Frontend signals fallback retry
         if (!id) return res.status(400).send("Missing id");
 
         const doc = await Video.findOne({
@@ -388,21 +321,16 @@ router.get("/tiktok-thumbnail", async (req, res) => {
 
         const thumb = doc.thumbnail || "";
 
-        // Check if the stored thumbnail URL has expired
-        const exp = thumb.match(/x-expires=(\d+)/);
-        const expired = exp && (+exp[1] * 1000) < Date.now();
+        // Check if the stored thumbnail URL is still usable
+        if (isUsable(thumb)) {
+            return res.redirect(thumb);
+        }
 
-        // If this is a retry (direct URL failed) OR the stored URL is expired,
-        // always try tikwm for a fresh thumbnail
-        if ((retry || expired) && doc.webVideoUrl) {
+        // Stored URL expired or unusable — try to get fresh thumbnail
+        if (doc.webVideoUrl) {
             try {
-                console.log("[tiktok-thumbnail] Fetching fresh thumbnail from tikwm for:", doc.videoId);
-                const { data } = await axios.get(
-                    `https://www.tikwm.com/api/?url=${encodeURIComponent(doc.webVideoUrl)}`,
-                    { timeout: 20000, headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } }
-                );
-                const freshThumb = data?.data?.cover || data?.data?.origin_cover || "";
-                console.log("[tiktok-thumbnail] Tikwm response:", freshThumb ? "Got fresh thumbnail" : "No thumbnail in response");
+                console.log("[tiktok-thumbnail] Fetching fresh thumbnail for:", doc.videoId);
+                const freshThumb = await fetchFreshThumbnail(doc.webVideoUrl);
                 
                 if (freshThumb) {
                     // Update the stored thumbnail for next time
@@ -413,17 +341,11 @@ router.get("/tiktok-thumbnail", async (req, res) => {
                     return res.redirect(freshThumb);
                 }
             } catch (e) {
-                console.error("[tiktok-thumbnail] Tikwm thumbnail refresh failed:", e.message);
+                console.error("[tiktok-thumbnail] Thumbnail refresh failed:", e.message);
             }
         }
 
-        // If stored URL exists and is not expired, redirect to it (fast path)
-        if (thumb && !expired) {
-            return res.redirect(thumb);
-        }
-
-        // If stored URL exists but is expired (and tikwm failed), still try it
-        // as a last resort — sometimes the CDN accepts expired URLs
+        // If stored URL exists but is expired, still try it as last resort
         if (thumb) {
             console.log("[tiktok-thumbnail] Using expired URL as fallback:", thumb.substring(0, 60));
             return res.redirect(thumb);
@@ -534,6 +456,7 @@ router.get("/tiktok-playlists", async (req, res) => {
 // =======================
 // GET /tiktok-video
 // Single video lookup by id (allowlist enforced)
+// Returns fresh thumbnail via thumbnailService fallback chain
 // =======================
 router.get("/tiktok-video", async (req, res) => {
     try {
@@ -558,7 +481,27 @@ router.get("/tiktok-video", async (req, res) => {
             return res.json({ success: false, error: "Video not from allowed account" });
         }
 
-        res.json({ success: true, video: mapVideoDoc(doc) });
+        const videoData = mapVideoDoc(doc);
+
+        // Ensure thumbnail is fresh (same logic as /tiktok-thumbnail)
+        const thumb = videoData.thumbnail || "";
+        if (doc.webVideoUrl && !isUsable(thumb)) {
+            try {
+                const freshThumb = await fetchFreshThumbnail(doc.webVideoUrl);
+                if (freshThumb) {
+                    videoData.thumbnail = freshThumb;
+                    // Update stored thumbnail for next time
+                    Video.updateOne(
+                        { videoId: doc.videoId },
+                        { $set: { thumbnail: freshThumb } }
+                    ).catch(() => { });
+                }
+            } catch (e) {
+                console.error("[tiktok-video] Thumbnail refresh failed:", e.message);
+            }
+        }
+
+        res.json({ success: true, video: videoData });
     } catch (err) {
         console.error("GET /tiktok-video error:", err);
         res.status(500).json({ success: false, error: "Failed to fetch video" });
@@ -568,6 +511,7 @@ router.get("/tiktok-video", async (req, res) => {
 // =======================
 // GET /tiktok-play
 // Resolve a currently-valid play URL for a video
+// Uses thumbnailService for robust fallback: stored URL -> tikwm -> page scrape
 // =======================
 router.get("/tiktok-play", async (req, res) => {
     try {
@@ -595,15 +539,12 @@ router.get("/tiktok-play", async (req, res) => {
         // Check if the stored playUrl is still usable
         let url = doc.playUrl && isStreamUsable(doc.playUrl) ? doc.playUrl : null;
 
-        // If not, try to resolve via tikwm
+        // If not, try to resolve via thumbnailService (tikwm + page scrape fallback)
         if (!url && doc.webVideoUrl) {
             try {
-                const { data } = await axios.get(
-                    `https://www.tikwm.com/api/?url=${encodeURIComponent(doc.webVideoUrl)}`,
-                    { timeout: 15000, headers: { "User-Agent": "Mozilla/5.0" } }
-                );
-                if (data?.data?.play) {
-                    url = data.data.play;
+                const { fetchFreshPlayUrl } = require("../services/thumbnailService");
+                url = await fetchFreshPlayUrl(doc.webVideoUrl);
+                if (url) {
                     // Cache the fresh play URL
                     Video.updateOne(
                         { videoId: doc.videoId },
@@ -611,7 +552,7 @@ router.get("/tiktok-play", async (req, res) => {
                     ).catch(() => { });
                 }
             } catch (e) {
-                console.error("tikwm play resolve failed:", e.message);
+                console.error("Play URL resolve failed:", e.message);
             }
         }
 
@@ -712,4 +653,3 @@ router.get("/tiktok-grid-videos", async (req, res) => {
 });
 
 module.exports = router;
-module.exports.loadRankingsCache = loadRankingsFromDB;

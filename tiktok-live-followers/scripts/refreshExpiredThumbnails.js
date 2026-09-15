@@ -2,11 +2,23 @@ require("dotenv").config();
 
 const mongoose = require("mongoose");
 const Video = require("../models/Video");
-const axios = require("axios");
+const { fetchFreshThumbnail } = require("../services/thumbnailService");
 
 async function connectDB() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB Connected");
+}
+
+function parseExpiry(url) {
+    const m = String(url || "").match(/x-expires=(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+}
+
+function isExpired(url) {
+    if (!url) return true;
+    const exp = parseExpiry(url);
+    if (exp === null) return false; // No expiry info, assume valid
+    return exp * 1000 < Date.now();
 }
 
 async function refreshExpiredThumbnails() {
@@ -31,10 +43,7 @@ async function refreshExpiredThumbnails() {
             const thumb = video.thumbnail || "";
             
             // Check if thumbnail is expired
-            const exp = thumb.match(/x-expires=(\d+)/);
-            const expired = exp && (+exp[1] * 1000) < Date.now();
-
-            if (!expired) {
+            if (!isExpired(thumb)) {
                 skipped++;
                 continue;
             }
@@ -42,15 +51,10 @@ async function refreshExpiredThumbnails() {
             console.log(`\n🔄 Refreshing thumbnail for video ${i + 1}/${videos.length}: ${video.videoId}`);
             console.log(`   Old thumbnail (expired): ${thumb.substring(0, 60)}...`);
 
-            // Try to get fresh thumbnail from tikwm
+            // Try to get fresh thumbnail using thumbnailService (oEmbed -> page scrape fallback)
             if (video.webVideoUrl) {
                 try {
-                    const { data } = await axios.get(
-                        `https://www.tikwm.com/api/?url=${encodeURIComponent(video.webVideoUrl)}`,
-                        { timeout: 20000, headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } }
-                    );
-                    
-                    const freshThumb = data?.data?.cover || data?.data?.origin_cover || "";
+                    const freshThumb = await fetchFreshThumbnail(video.webVideoUrl);
                     
                     if (freshThumb) {
                         // Update database with fresh thumbnail
@@ -62,11 +66,11 @@ async function refreshExpiredThumbnails() {
                         console.log(`   ✅ Fresh thumbnail: ${freshThumb.substring(0, 60)}...`);
                         refreshed++;
                     } else {
-                        console.log(`   ❌ No fresh thumbnail from tikwm`);
+                        console.log(`   ❌ No fresh thumbnail from any source`);
                         failed++;
                     }
                 } catch (error) {
-                    console.log(`   ❌ tikwm request failed: ${error.message}`);
+                    console.log(`   ❌ Thumbnail refresh failed: ${error.message}`);
                     failed++;
                 }
             } else {
@@ -77,6 +81,11 @@ async function refreshExpiredThumbnails() {
             process.stdout.write(
                 `\r📦 ${i + 1}/${videos.length} | Refreshed:${refreshed} | Skipped:${skipped} | Failed:${failed}`
             );
+            
+            // Small delay to avoid rate limiting
+            if (i < videos.length - 1) {
+                await new Promise(r => setTimeout(r, 200));
+            }
         }
 
         console.log("\n");
