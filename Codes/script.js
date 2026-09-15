@@ -149,7 +149,7 @@ function attachMenuEvents() {
     if (eventBtn) eventBtn.addEventListener("click", () => { openSubmenu(["Christmas", "Halloween", "Independence Day", "New Year", "Ramadan"]); });
     if (emailBtn) emailBtn.addEventListener("click", () => { openSubmenu([`<span onclick="visitlink('https://mail.google.com/mail/?view=cm&to=omarito@qstar.kz')">omarito@qstar.kz</span>`, `<span onclick="visitlink('https://mail.google.com/mail/?view=cm&to=dilandyalievaaa@gmail.com')">dilandyalievaaa@gmail.com</span>`]); });
     if (locationBtn) locationBtn.addEventListener("click", () => { openSubmenu([`<span onclick="visitlink('https://www.google.com/maps/place/Almaty+Kazakhstan')">Alamty, Kazakhstan</span>`]); });
-    if (visitBtn) visitBtn.addEventListener("click", () => { openSubmenu([`<span onclick="openJourney('https://www.instagram.com/stories/highlights/17900528382245066/')">Qatar</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17950245054003983/')">Indonesia</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18124074073461615/')">China</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18034139063358170/')">Azerbaijan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17893714956232937/')">Kyrgyztan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17892465525192636/')">Turkey</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17909613041984299/')">Tajikistan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18063881989659947/')">Dubai</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18189277981305948/')">Uzbekistan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18247475899274262/')">Kazakhstan</span>`]); });
+    if (visitBtn) visitBtn.addEventListener("click", () => { openSubmenu([`<span onclick="openJourney('https://www.instagram.com/stories/highlights/17886960027577786/')">South Korea</span>`,`<span onclick="openJourney('https://www.instagram.com/stories/highlights/17900528382245066/')">Qatar</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17950245054003983/')">Indonesia</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18124074073461615/')">China</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18034139063358170/')">Azerbaijan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17893714956232937/')">Kyrgyztan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17892465525192636/')">Turkey</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/17909613041984299/')">Tajikistan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18063881989659947/')">Dubai</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18189277981305948/')">Uzbekistan</span>`, `<span onclick="openJourney('https://www.instagram.com/stories/highlights/18247475899274262/')">Kazakhstan</span>`]); });
 
     let tiktokOpen = false;
     if (tiktokBtn) {
@@ -433,28 +433,31 @@ async function loadRanking() {
         const worldEl = document.getElementById("worldRank");
         const kzEl = document.getElementById("kzRank");
 
-        if (data.success) {
-            if (asiaEl) asiaEl.innerText = data.asiaRank;
-            if (worldEl) worldEl.innerText = data.worldRank;
-            if (kzEl) kzEl.innerText = data.kzRank;
+        if (data.success && data.rankings) {
+            // Show actual rank values, or "Updating..." if null
+            if (asiaEl) asiaEl.innerText = data.rankings.asia !== null ? "#" + data.rankings.asia : "Updating...";
+            if (worldEl) worldEl.innerText = data.rankings.world !== null ? "#" + data.rankings.world : "Updating...";
+            if (kzEl) kzEl.innerText = data.rankings.kazakhstan !== null ? "#" + data.rankings.kazakhstan : "Updating...";
         } else {
-            // Fallback values
-            if (asiaEl) asiaEl.innerText = "#10";
-            if (worldEl) worldEl.innerText = "#25";
-            if (kzEl) kzEl.innerText = "#1";
+            // No valid data yet - show "Updating..."
+            if (asiaEl) asiaEl.innerText = "Updating...";
+            if (worldEl) worldEl.innerText = "Updating...";
+            if (kzEl) kzEl.innerText = "Updating...";
         }
 
     } catch (error) {
         console.log("Ranking Error:", error);
-        // Fallback values
-        document.getElementById("asiaRank").innerText = "#10";
-        document.getElementById("worldRank").innerText = "#25";
-        document.getElementById("kzRank").innerText = "#1";
+        // Show "Updating..." on error instead of fake fallback values
+        document.getElementById("asiaRank").innerText = "Updating...";
+        document.getElementById("worldRank").innerText = "Updating...";
+        document.getElementById("kzRank").innerText = "Updating...";
     }
 }
 
 
 loadRanking();
+// Refresh rankings every 10 minutes
+setInterval(loadRanking, 10 * 60 * 1000);
 
 
 
