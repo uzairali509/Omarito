@@ -93,7 +93,9 @@ function mapVideoDoc(doc) {
         video_url: doc.webVideoUrl || "",
         playUrl: doc.playUrl || "",
         createTime: doc.createTime || null,
-        hashtags: doc.hashtags || []
+        hashtags: doc.hashtags || [],
+        platform: doc.platform || "tiktok",
+        isShort: doc.isShort || false
     };
 }
 
@@ -275,6 +277,10 @@ router.get("/omari-videos", async (req, res) => {
 
         const query = {
             isActive: true,
+            $or: [
+                { platform: "tiktok" },
+                { platform: { $exists: false } }
+            ],
             webVideoUrl: handleRegex("omari.to")
         };
 
@@ -311,7 +317,10 @@ router.get("/tiktok-thumbnail", async (req, res) => {
 
         const doc = await Video.findOne({
             $or: [{ videoId: id }, { tiktok_id: id }],
-            isActive: true
+            isActive: true,
+            $and: [
+                { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] }
+            ]
         }).lean();
 
         if (!doc) {
@@ -373,6 +382,7 @@ router.get("/tiktok-upnext", async (req, res) => {
         // Build the allowlist pipeline: match ANY of the allowed accounts
         const matchStage = {
             isActive: true,
+            platform: "tiktok",
             $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
         };
 
@@ -444,7 +454,7 @@ router.get("/tiktok-playlists", async (req, res) => {
         ];
         const withCounts = await Promise.all(playlists.map(async p => ({
             ...p,
-            count: await Video.countDocuments({ playlistIds: p.id, isActive: true })
+            count: await Video.countDocuments({ playlistIds: p.id, isActive: true, platform: "tiktok" })
         })));
         res.json({ success: true, playlists: withCounts });
     } catch (err) {
@@ -468,7 +478,10 @@ router.get("/tiktok-video", async (req, res) => {
                 { videoId: id },
                 { tiktok_id: id }
             ],
-            isActive: true
+            isActive: true,
+            $and: [
+                { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] }
+            ]
         }).lean();
 
         if (!doc) {
@@ -523,7 +536,10 @@ router.get("/tiktok-play", async (req, res) => {
                 { videoId: id },
                 { tiktok_id: id }
             ],
-            isActive: true
+            isActive: true,
+            $and: [
+                { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] }
+            ]
         }).lean();
 
         if (!doc) {
@@ -596,8 +612,13 @@ router.get("/tiktok-grid-videos", async (req, res) => {
         }
 
         // Base query: allowlist enforced via webVideoUrl
+        // Match platform: "tiktok" OR platform doesn't exist (backward compat)
         const baseQuery = {
             isActive: true,
+            $or: [
+                { platform: "tiktok" },
+                { platform: { $exists: false } }
+            ],
             webVideoUrl: handleRegex(username)
         };
 
@@ -653,6 +674,86 @@ router.get("/tiktok-grid-videos", async (req, res) => {
 });
 
 // =======================
+// GET /tiktok-all-videos
+// Fetch TikTok videos from ALL allowed creators combined (for "All" view)
+// =======================
+router.get("/tiktok-all-videos", async (req, res) => {
+    try {
+        const page  = Math.max(1, parseInt(req.query.page)  || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 100));
+        const skip  = (page - 1) * limit;
+
+        // Build query matching ANY allowed creator
+        // Match platform: "tiktok" OR platform doesn't exist (backward compat)
+        const matchStage = {
+            isActive: true,
+            $and: [
+                { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] },
+                { $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) })) }
+            ]
+        };
+
+        const [docs, total] = await Promise.all([
+            Video.find(matchStage).sort({ createTime: -1 }).skip(skip).limit(limit).lean(),
+            Video.countDocuments(matchStage)
+        ]);
+
+        const videos = docs.map(mapVideoDoc);
+
+        res.json({
+            success: true,
+            videos,
+            page, limit, total,
+            hasMore: skip + videos.length < total
+        });
+    } catch (err) {
+        console.error("GET /tiktok-all-videos error:", err);
+        res.status(500).json({ success: false, error: "Failed to fetch videos" });
+    }
+});
+
+// =======================
+// GET /youtube-videos
+// Fetch YouTube videos (regular and Shorts) with platform filtering
+// =======================
+router.get("/youtube-videos", async (req, res) => {
+    try {
+        const page  = Math.max(1, parseInt(req.query.page)  || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 100));
+        const skip  = (page - 1) * limit;
+        const type  = String(req.query.type || "").toLowerCase(); // "all", "videos", "shorts"
+
+        const matchStage = {
+            isActive: true,
+            platform: "youtube"
+        };
+
+        if (type === "videos") {
+            matchStage.isShort = { $ne: true };
+        } else if (type === "shorts") {
+            matchStage.isShort = true;
+        }
+
+        const [docs, total] = await Promise.all([
+            Video.find(matchStage).sort({ createTime: -1 }).skip(skip).limit(limit).lean(),
+            Video.countDocuments(matchStage)
+        ]);
+
+        const videos = docs.map(mapVideoDoc);
+
+        res.json({
+            success: true,
+            videos,
+            page, limit, total,
+            hasMore: skip + videos.length < total
+        });
+    } catch (err) {
+        console.error("GET /youtube-videos error:", err);
+        res.status(500).json({ success: false, error: "Failed to fetch YouTube videos" });
+    }
+});
+
+// =======================
 // GET /notifications
 // Returns recent video updates for the notification panel
 // =======================
@@ -663,6 +764,7 @@ router.get("/notifications", async (req, res) => {
         // Build the allowlist pipeline: match ANY of the allowed accounts
         const matchStage = {
             isActive: true,
+            platform: "tiktok",
             $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
         };
         

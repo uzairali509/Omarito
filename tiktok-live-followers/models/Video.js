@@ -17,6 +17,12 @@ const videoSchema = new mongoose.Schema(
             trim: true
         },
 
+        platform: {
+            type: String,
+            enum: ["tiktok", "youtube"],
+            default: "tiktok"
+        },
+
         creator: {
             type: String,
             default: "Other"
