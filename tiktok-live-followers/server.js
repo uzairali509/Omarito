@@ -329,6 +329,19 @@ if (hasTikTokCreds) {
 
 const PORT = 3000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running http://localhost:${PORT}`);
+    console.log('Server listening on:', server.address());
+});
+
+server.on('error', (err) => {
+    console.error('Server error:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
 });

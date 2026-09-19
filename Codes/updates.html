@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Updates - Omari.to</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/Codes/style.css">
+    <link rel="icon" href="/Public/Images/Logo.png">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <style>
+        .updates-page {
+            margin-top: 120px;
+            padding: 40px 8%;
+            min-height: calc(100vh - 120px);
+        }
+
+        .updates-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .updates-header h1 {
+            font-family: "Playfair Display", serif;
+            font-size: 42px;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .updates-header p {
+            color: #aaa;
+            font-size: 16px;
+        }
+
+        .updates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .updates-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .update-card {
+            background: linear-gradient(145deg, #1a1a1a, #141414);
+            border: 1px solid rgba(255, 159, 28, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .update-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: rgba(255, 159, 28, 0.3);
+            box-shadow: 0 14px 35px rgba(255, 159, 28, 0.25);
+        }
+
+        .update-thumb {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+        }
+
+        .update-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .45s ease;
+        }
+
+        .update-card:hover .update-thumb img {
+            transform: scale(1.07);
+        }
+
+        .update-badge {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            background: rgba(255, 159, 28, 0.9);
+            color: #111;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            z-index: 2;
+        }
+
+        .update-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .update-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .update-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+        }
+
+        .update-creator {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .update-platform {
+            background: rgba(212, 191, 134, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .update-title {
+            font-size: 15px;
+            line-height: 1.4;
+            color: #f2f2f2;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .update-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: auto;
+        }
+
+        .update-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #9a9a9a;
+        }
+
+        .update-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: #777;
+            white-space: nowrap;
+        }
+
+        .updates-empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .updates-empty i {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="top-navbar">
+        <div class="logo">
+            <a href="http://localhost:3000/">
+                <img src="/Public/Images/Logo.png" width="50">
+                <span class="brand-name">omari<span class="dot">.</span>to</span>
+            </a>
+        </div>
+
+        <ul class="nav-links">
+            <a href="/Codes/Login.html" id="loginLink" style="display: flex;">
+                <li>Login</li>
+            </a>
+            <a href="/Codes/About.html">
+                <li>About</li>
+            </a>
+            <li>Favorite</li>
+            <!-- Notification Bell -->
+            <div class="nav-notification-toggle" id="navNotificationBox" style="position: relative;">
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications" onclick="toggleNotificationPanel()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <div class="notification-panel" id="notificationPanel" style="display: none;">
+                    <div class="notification-header">
+                        <h3>NOTIFICATIONS</h3>
+                        <a href="/Codes/updates.html" class="see-all-link">SEE ALL UPDATES</a>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No new updates</div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-profile-toggle" id="navProfileBox" style="display: none;" onclick="toggleProfilePanel()">
+                <img id="navProfileImg" src="/Public/Images/default-user.png">
+                <span id="navUserName"></span>
+            </div>
+        </ul>
+    </nav>
+
+    <!-- ELECTRIC CURSOR -->
+    <div class="electric-cursor"></div>
+    <canvas id="lightningCanvas"></canvas>
+
+    <!-- SIDE BUTTONS -->
+    <div class="side-buttons">
+        <a href="https://www.tiktok.com/@omari.to/live?lang=en" target="_blank"><button class="side-btn">Tikok
+                Live</button></a>
+        <a
+            onclick="openJourney('https://www.tiktok.com/@omari.to','Join the Official Community','Now click and join the group of Omari.to news and stay connected with the world.')"><button
+                class="side-btn">Join Group</button></a>
+    </div>
+
+    <!-- BOTTOM MENU -->
+    <nav class="bottom-navbar">
+        <div class="menu-toggle" id="menuToggle">☰</div>
+        <div class="menu" id="menu">
+            <ul class="menu-links" id="mainMenu">
+                <li class="active">Omarito.World</li>
+                <li>Omarito.Wow</li>
+                <li>Omarito.Chef</li>
+                <li id="charactersBtn">Characters →</li>
+                <li id="yearBtn">Year →</li>
+                <li id="eventBtn">Special Events →</li>
+                <li id="emailBtn">Get Email →</li>
+                <li id="locationBtn">Get Destination →</li>
+                <li id="visitBtn">Visited Places →</li>
+                <a href="/Codes/About.html">
+                    <li>More with us →</li>
+                </a>
+            </ul>
+
+
+            <div class="social-links">
+                <a id="tiktokBtn">TikTok</a>
+                <a href="https://youtube.com/@Omari_to" target="_blank">Youtube</a>
+                <a href="https://www.instagram.com/omari.too" target="_blank">Instagram</a>
+                <a href="https://www.facebook.com/omar.aliev.2024/" target="_blank">Facebook</a>
+                <a href="https://www.threads.com/@omari.too" target="_blank">Threads</a>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- 🔥 PROFILE DETAILS PANEL (Initially Hidden) -->
+    <section class="profile-panel" id="profilePanel" style="display: none;">
+
+        <h3 id="userEmail"></h3>
+
+        <div class="panel-profile-box">
+            <img id="panelProfileImg" src="/Public/Images/default-user.png">
+        </div>
+
+        <div class="panel-logindata">
+            <p><strong>Name:</strong> <span id="userName"></span></p>
+            <p><strong>Age:</strong> <span id="userAge"></span></p>
+            <p><strong>Date:</strong> <span id="userDate"></span></p>
+        </div>
+
+        <div class="panel-actions">
+            <button type="button" id="logoutBtn">LogOut</button>
+            <button type="button" id="deleteAccBtn">Delete Account</button>
+            <a href="/Codes/settings.html"><button type="button" class="settings-btn">Change Something Else</button></a>
+        </div>
+    </section>
+
+    <!-- UPDATES PAGE -->
+    <section class="updates-page">
+        <div class="updates-header">
+            <h1>UPDATES</h1>
+            <p>Latest videos from your favorite creators</p>
+        </div>
+
+        <div class="updates-grid" id="updatesGrid">
+            <div class="updates-empty">
+                <i class="fas fa-bell-slash"></i>
+                Loading updates...
+            </div>
+        </div>
+    </section>
+
+    <script src="/Codes/script.js"></script>
+    <script>
+        // Fetch and render all updates
+        async function fetchAllUpdates() {
+            try {
+                const response = await fetch(API_BASE + '/notifications?limit=50');
+                const data = await response.json();
+                if (data.success && data.notifications) {
+                    renderAllUpdates(data.notifications);
+                }
+            } catch (e) {
+                console.log('Updates fetch error:', e);
+                document.getElementById('updatesGrid').innerHTML = '<div class="updates-empty"><i class="fas fa-exclamation-triangle"></i>Failed to load updates</div>';
+            }
+        }
+
+        function renderAllUpdates(updates) {
+            const grid = document.getElementById('updatesGrid');
+            if (!updates || updates.length === 0) {
+                grid.innerHTML = '<div class="updates-empty"><i class="fas fa-bell-slash"></i>No updates available</div>';
+                return;
+            }
+
+            grid.innerHTML = updates.map(u => {
+                const avatar = u.creatorAvatar || '/Public/Images/default-user.png';
+                const platformName = u.platform === 'youtube' ? 'YouTube' : 'TikTok';
+                const platformIcon = u.platform === 'youtube' ? 'fab fa-youtube' : 'fab fa-tiktok';
+                const timeAgo = formatRelativeTime(u.createTime);
+                
+                return `
+                    <a href="/Codes/player.html?id=${u.videoId}" class="update-card">
+                        <div class="update-thumb">
+                            <img src="${u.thumbnail}" alt="${u.title || 'Video thumbnail'}">
+                            <span class="update-badge"><i class="${platformIcon}"></i> ${platformName}</span>
+                        </div>
+                        <div class="update-body">
+                            <div class="update-meta">
+                                <img src="${avatar}" alt="" class="update-avatar">
+                                <span class="update-creator">${u.creator}</span>
+                                <span class="update-platform">${platformName}</span>
+                            </div>
+                            <h3 class="update-title">${u.title || 'New video uploaded'}</h3>
+                            <div class="update-footer">
+                                <div class="update-stats">
+                                    <span class="update-stat"><i class="far fa-clock"></i> ${timeAgo}</span>
+                                </div>
+                                <span class="update-time">${timeAgo}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        // Reuse formatRelativeTime from script.js
+        // (it's already defined globally in script.js)
+
+        // Initialize
+        fetchAllUpdates();
+    </script>
+</body>
+
+</html>
