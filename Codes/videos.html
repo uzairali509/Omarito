@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -302,6 +302,25 @@
                 <li>About</li>
             </a>
             <li>Favorite</li>
+            <!-- Notification Bell -->
+            <div class="nav-notification-toggle" id="navNotificationBox" style="position: relative;">
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications" onclick="toggleNotificationPanel()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <div class="notification-panel" id="notificationPanel" style="display: none;">
+                    <div class="notification-header">
+                        <h3>NOTIFICATIONS</h3>
+                        <a href="/Codes/updates.html" class="see-all-link">SEE ALL UPDATES</a>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No new updates</div>
+                    </div>
+                </div>
+            </div>
             <div class="nav-profile-toggle" id="navProfileBox" style="display: none;" onclick="toggleProfilePanel()">
                 <img id="navProfileImg" src="/Public/Images/default-user.png">
                 <span id="navUserName"></span>
@@ -321,20 +340,20 @@
     </div>
 
     <nav class="bottom-navbar">
-        <div class="menu-toggle" id="menuToggle">☰</div>
+        <div class="menu-toggle" id="menuToggle">â˜°</div>
         <div class="menu" id="menu">
             <ul class="menu-links" id="mainMenu">
                 <li class="active">Omarito.World</li>
                 <li>Omarito.Wow</li>
                 <li>Omarito.Chef</li>
-                <li id="charactersBtn">Characters →</li>
-                <li id="yearBtn">Year →</li>
-                <li id="eventBtn">Special Events →</li>
-                <li id="emailBtn">Get Email →</li>
-                <li id="locationBtn">Get Destination →</li>
-                <li id="visitBtn">Visited Places →</li>
+                <li id="charactersBtn">Characters â†’</li>
+                <li id="yearBtn">Year â†’</li>
+                <li id="eventBtn">Special Events â†’</li>
+                <li id="emailBtn">Get Email â†’</li>
+                <li id="locationBtn">Get Destination â†’</li>
+                <li id="visitBtn">Visited Places â†’</li>
                 <a href="/Codes/About.html">
-                    <li>More with us →</li>
+                    <li>More with us â†’</li>
                 </a>
             </ul>
             <div class="social-links">
@@ -366,7 +385,7 @@
     </section>
 
     <div id="connectionStatus" class="status-bar online">
-        🔴 Offline
+        ðŸ”´ Offline
     </div>
 
     <div id="loader">
@@ -420,14 +439,14 @@
         // ==================== CONFIG ====================
         const params = new URLSearchParams(window.location.search);
 
-        // Official playlist ID → display name (for page title)
+        // Official playlist ID â†’ display name (for page title)
         const PLAYLIST_ID_TO_NAME = {
-            "7433667529204828933": "OMARITO.WOW✈️",
-            "7433396735386405638": "OMARITO.WORLD👨🏻‍🎓",
-            "7433392358749653766": "OMARITO.CHEF🧑🏻‍🍳"
+            "7433667529204828933": "OMARITO.WOWâœˆï¸",
+            "7433396735386405638": "OMARITO.WORLDðŸ‘¨ðŸ»â€ðŸŽ“",
+            "7433392358749653766": "OMARITO.CHEFðŸ§‘ðŸ»â€ðŸ³"
         };
 
-        // Legacy name → numeric ID (so old ?playlist=Omarito.World links work)
+        // Legacy name â†’ numeric ID (so old ?playlist=Omarito.World links work)
         const PLAYLIST_NAME_TO_ID = {
             "Omarito.World": "7433396735386405638",
             "Omarito.Wow":   "7433667529204828933",
@@ -461,14 +480,14 @@
 
         // NOTE: API_BASE is declared ONCE in /Codes/script.js (loaded above
         // this inline block) and shared by every page. Do NOT redeclare it
-        // here — a second top-level `const API_BASE` throws
+        // here â€” a second top-level `const API_BASE` throws
         // "Identifier 'API_BASE' has already been declared" and stops ALL
         // JavaScript on the page (grid never initializes).
 
         const API_KEY = "AIzaSyBtqSE00ra7_NoRg3EGuipaq75VIBDsecg";
 
         // Shared number/duration formatting for premium card stats.
-        // Values always come from the API/DB — never generated here.
+        // Values always come from the API/DB â€” never generated here.
         function formatStat(num) {
             if (num === null || num === undefined) return "0";
             const n = Number(num);
@@ -574,7 +593,7 @@
             if (grid.children.length > 0) return;
 
 
-            // Extract Video IDs (Shorts links are excluded — VIDEOS section shows normal YouTube videos only)
+            // Extract Video IDs (Shorts links are excluded â€” VIDEOS section shows normal YouTube videos only)
             const videoIds = manualVideos
                 .filter(link => !/\/shorts\//i.test(link))
                 .map(link => {
@@ -605,7 +624,7 @@
                         const title = item.snippet.title;
                         const channel = item.snippet.channelTitle || "Omari.to";
                         const thumb = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.medium.url;
-                        // Actual YouTube values — never fake numbers
+                        // Actual YouTube values â€” never fake numbers
                         const views = Number(item.statistics && item.statistics.viewCount) || 0;
                         const likes = Number(item.statistics && item.statistics.likeCount) || 0;
                         const comments = Number(item.statistics && item.statistics.commentCount) || 0;
@@ -621,17 +640,17 @@
                                 <div class="card-title">${title}</div>
                                 <div class="card-creator">${channel}</div>
                                 <div class="card-stats">
-                                    <span>👁 ${formatStat(views)}</span>
-                                    <span>❤ ${formatStat(likes)}</span>
+                                    <span>ðŸ‘ ${formatStat(views)}</span>
+                                    <span>â¤ ${formatStat(likes)}</span>
                                 </div>
                             </div>
                             <div class="card-overlay">
                                 <div class="ov-title">STATISTICS</div>
                                 <div class="ov-row"><span>Views</span><span>${formatStat(views)}</span></div>
                                 <div class="ov-row"><span>Likes</span><span>${formatStat(likes)}</span></div>
-                                <div class="ov-row"><span>Comments</span><span>${comments ? formatStat(comments) : "—"}</span></div>
-                                <div class="ov-row"><span>Duration</span><span>${formatDuration(totalSeconds) || "—"}</span></div>
-                                <div class="ov-play">▶ Watch Now</div>
+                                <div class="ov-row"><span>Comments</span><span>${comments ? formatStat(comments) : "â€”"}</span></div>
+                                <div class="ov-row"><span>Duration</span><span>${formatDuration(totalSeconds) || "â€”"}</span></div>
+                                <div class="ov-play">â–¶ Watch Now</div>
                             </div>
                         `;
                         // Click -> dedicated player page (exact video by real YouTube id)
@@ -727,16 +746,16 @@
             const stats = document.createElement("div");
             stats.className = "card-stats";
             stats.innerHTML = `
-                <span>👁 ${formatStat(video.views)}</span>
-                <span>❤ ${formatStat(video.likes)}</span>
-                <span>💬 ${formatStat(video.comments)}</span>
+                <span>ðŸ‘ ${formatStat(video.views)}</span>
+                <span>â¤ ${formatStat(video.likes)}</span>
+                <span>ðŸ’¬ ${formatStat(video.comments)}</span>
             `;
 
             body.appendChild(title);
             body.appendChild(creator);
             body.appendChild(stats);
 
-            // Hover stats overlay — actual stored TikTok values only
+            // Hover stats overlay â€” actual stored TikTok values only
             const overlay = document.createElement("div");
             overlay.className = "card-overlay";
             overlay.innerHTML = `
@@ -744,9 +763,9 @@
                 <div class="ov-row"><span>Views</span><span>${formatStat(video.views)}</span></div>
                 <div class="ov-row"><span>Likes</span><span>${formatStat(video.likes)}</span></div>
                 <div class="ov-row"><span>Comments</span><span>${formatStat(video.comments)}</span></div>
-                <div class="ov-row"><span>Shares</span><span>${video.shares ? formatStat(video.shares) : "—"}</span></div>
-                <div class="ov-row"><span>Duration</span><span>${formatDuration(video.duration) || "—"}</span></div>
-                <div class="ov-play">▶ Watch Now</div>
+                <div class="ov-row"><span>Shares</span><span>${video.shares ? formatStat(video.shares) : "â€”"}</span></div>
+                <div class="ov-row"><span>Duration</span><span>${formatDuration(video.duration) || "â€”"}</span></div>
+                <div class="ov-play">â–¶ Watch Now</div>
             `;
 
             card.appendChild(thumbWrap);

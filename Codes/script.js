@@ -1,11 +1,11 @@
-// ===== BACKEND API BASE =====
+﻿// ===== BACKEND API BASE =====
 // Served by the Express backend (port 3000) -> same-origin relative URLs.
 // Opened via Live Server / other static host -> point at the local backend.
 const API_BASE = (window.location.port === "3000") ? "" : "http://localhost:3000";
 
 // ===== NUMBER FORMATTING (K/M/B) =====
 // Always shows up to 2 significant decimal places, strips trailing zeros.
-// Examples: 59000000→59M, 32828396→32.83M, 3862164→3.86M, 1500→1.5K
+// Examples: 59000000â†’59M, 32828396â†’32.83M, 3862164â†’3.86M, 1500â†’1.5K
 function formatStat(num) {
     if (num === null || num === undefined) return "0";
     const n = Number(num);
@@ -36,7 +36,7 @@ if (toggle && menu) {
 // ===== TIKTOK DATA FETCH =====
 async function getTikTokData() {
     try {
-        const response = await fetch(API_BASE + "/tiktok-data"); // ✅ Localhost hata diya
+        const response = await fetch(API_BASE + "/tiktok-data"); // âœ… Localhost hata diya
         const data = await response.json();
         const followersEl = document.getElementById("followersCount");
         const likesEl = document.getElementById("likesCount");
@@ -46,6 +46,117 @@ async function getTikTokData() {
 }
 getTikTokData();
 setInterval(getTikTokData, 60000);
+
+// ===== NOTIFICATION SYSTEM =====
+async function fetchNotifications() {
+    try {
+        const response = await fetch(API_BASE + '/notifications');
+        const data = await response.json();
+        if (data.success && data.notifications) {
+            renderNotifications(data.notifications);
+            updateNotificationBadge(data.notifications);
+        }
+    } catch (e) {
+        console.log('Notification fetch error:', e);
+    }
+}
+
+function renderNotifications(notifications) {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    
+    if (!notifications || notifications.length === 0) {
+        list.innerHTML = '<div class="notification-empty">No new updates</div>';
+        return;
+    }
+    
+    list.innerHTML = notifications.map(n => {
+        const avatar = n.creatorAvatar || '/Public/Images/default-user.png';
+        const platformIcon = n.platform === 'youtube' ? 'fab fa-youtube' : 'fab fa-tiktok';
+        const platformName = n.platform === 'youtube' ? 'YouTube' : 'TikTok';
+        return `
+            <a href="/Codes/player.html?id=${n.videoId}" class="notification-item" data-id="${n.videoId}">
+                <img src="${avatar}" alt="" class="notification-avatar">
+                <div class="notification-content">
+                    <div class="notification-title">
+                        <span class="creator">${n.creator}</span>
+                        <span class="platform">${platformName}</span>
+                    </div>
+                    <div class="notification-desc">${n.title || 'New video uploaded'}</div>
+                    <div class="notification-time">${formatRelativeTime(n.createTime)}</div>
+                </div>
+            </a>
+        `.trim();
+    }).join('');
+}
+
+function updateNotificationBadge(notifications) {
+    const badge = document.getElementById('notificationBadge');
+    if (!badge) return;
+    
+    const lastSeen = localStorage.getItem('lastNotificationSeen') || 0;
+    const unreadCount = notifications.filter(n => new Date(n.createTime).getTime() > lastSeen).length;
+    
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function formatRelativeTime(dateString) {
+    if (!dateString) return 'Just now';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
+}
+
+function toggleNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    if (!panel) return;
+    
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        fetchNotifications();
+        // Mark as seen when opened
+        localStorage.setItem('lastNotificationSeen', Date.now().toString());
+        updateNotificationBadge([]);
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// Close notification panel on outside click
+window.addEventListener('click', function(e) {
+    const panel = document.getElementById('notificationPanel');
+    const btn = document.getElementById('notificationBtn');
+    if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+        panel.style.display = 'none';
+    }
+});
+
+// Close on Escape key
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) panel.style.display = 'none';
+    }
+});
+
+// Fetch notifications on load
+fetchNotifications();
+// Refresh notifications every 5 minutes
+setInterval(fetchNotifications, 300000);
 
 // ===== ELECTRIC CURSOR LOGIC =====
 const cursor = document.querySelector(".electric-cursor");
@@ -66,7 +177,7 @@ if (cursor && canvas) {
         createParticle(mouse.x, mouse.y);
     });
 
-    // ✅ Lightbox ke andar bhi cursor track kare
+    // âœ… Lightbox ke andar bhi cursor track kare
     const lightboxOverlay = document.getElementById('lightboxOverlay');
     if (lightboxOverlay) {
         lightboxOverlay.addEventListener("mousemove", (e) => {
@@ -164,7 +275,7 @@ function openSubmenu(items) {
     if (!mainMenu) return;
     mainMenu.classList.remove("reset-position"); mainMenu.classList.add("slide-out-left");
     setTimeout(() => {
-        mainMenu.innerHTML = `<li id="backBtn">← Back</li>${items.map(item => `<li>${item}</li>`).join("")}`;
+        mainMenu.innerHTML = `<li id="backBtn">â† Back</li>${items.map(item => `<li>${item}</li>`).join("")}`;
         mainMenu.scrollTop = 0; mainMenu.classList.remove("slide-out-left"); mainMenu.classList.add("slide-out-right");
         void mainMenu.offsetWidth; mainMenu.classList.remove("slide-out-right"); mainMenu.classList.add("reset-position");
         document.getElementById("backBtn").addEventListener("click", goBack);
@@ -204,7 +315,7 @@ if (charactersBtn) {
     });
 }
 
-// ===== 🔥 PROFILE PANEL TOGGLE & DATA FETCHING =====
+// ===== ðŸ”¥ PROFILE PANEL TOGGLE & DATA FETCHING =====
 function toggleProfilePanel() {
     const panel = document.getElementById("profilePanel");
     if (!panel) return;
@@ -229,7 +340,7 @@ if (deleteAccBtn) {
         const confirmDelete = confirm("Are you sure you want to delete your account?");
         if (!confirmDelete) return;
         try {
-            const res = await fetch(API_BASE + '/delete-account', { method: 'DELETE', credentials: 'include' }); // ✅ Localhost hata diya
+            const res = await fetch(API_BASE + '/delete-account', { method: 'DELETE', credentials: 'include' }); // âœ… Localhost hata diya
             const data = await res.json();
             if (data.success) {
                 alert("Account Deleted");
@@ -297,7 +408,7 @@ const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
         try {
-            const response = await fetch(API_BASE + '/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } }); // ✅ Localhost hata diya
+            const response = await fetch(API_BASE + '/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } }); // âœ… Localhost hata diya
             if (response.ok) { localStorage.removeItem('token'); window.location.href = '/Codes/Login.html'; }
             else { alert("Logout failed, try again!"); }
         } catch (err) {
@@ -336,7 +447,7 @@ async function getUser() {
             document.getElementById("navProfileImg").src = imageUrl;
             document.getElementById("panelProfileImg").src = imageUrl;
 
-            // 🔥 BIRTHDAY LOGIC WITH LOCALSTORAGE
+            // ðŸ”¥ BIRTHDAY LOGIC WITH LOCALSTORAGE
             if (data.birthdayStatus === "today") {
                 const lastShown = localStorage.getItem("bdayShownTime");
                 const now = Date.now();
@@ -354,7 +465,7 @@ async function getUser() {
                 if (!sessionStorage.getItem("bdayNearShown")) {
                     setTimeout(() => {
                         Toastify({
-                            text: `🎂 🎉 ${user.firstname}, Your Birthday is Coming Soon! Get Ready!`,
+                            text: `ðŸŽ‚ ðŸŽ‰ ${user.firstname}, Your Birthday is Coming Soon! Get Ready!`,
                             duration: 8000,
                             gravity: "top",
                             position: "center",
@@ -394,7 +505,7 @@ function updateConnectionStatus() {
     if (!statusBar) return; // Agar element nahi mila toh error nahi dega
 
     if (navigator.onLine) {
-        statusBar.textContent = "🟢 Online";
+        statusBar.textContent = "ðŸŸ¢ Online";
         statusBar.classList.remove('offline');
         statusBar.classList.add('online');
         statusBar.classList.remove('hide');
@@ -402,7 +513,7 @@ function updateConnectionStatus() {
         // 2 seconds baad green bar chup jayega
         setTimeout(() => statusBar.classList.add('hide'), 2000);
     } else {
-        statusBar.textContent = "🔴 Offline";
+        statusBar.textContent = "ðŸ”´ Offline";
         statusBar.classList.remove('online');
         statusBar.classList.add('offline');
         statusBar.classList.remove('hide');
@@ -413,7 +524,7 @@ function updateConnectionStatus() {
 window.addEventListener('online', updateConnectionStatus);
 window.addEventListener('offline', updateConnectionStatus);
 
-// ✅ PAGE LOAD PAR PEHLI BAAR CHECK KARO (Yeh add nahi tha)
+// âœ… PAGE LOAD PAR PEHLI BAAR CHECK KARO (Yeh add nahi tha)
 updateConnectionStatus();
 
 
@@ -622,7 +733,7 @@ if (lightboxOverlay) {
 }
 
 // QR Download Logic
-// 🔥 QR CODE DOWNLOAD LOGIC (Direct Image Download)
+// ðŸ”¥ QR CODE DOWNLOAD LOGIC (Direct Image Download)
 if (qrDownloadBtn) {
     qrDownloadBtn.addEventListener('click', async () => {
 
@@ -685,7 +796,7 @@ function filterLegends(category, btn) {
 }
 
 
-// ===== 🔥 MESSAGE SECTION LOGIC (With All Countries/Cities API & DB Save) =====
+// ===== ðŸ”¥ MESSAGE SECTION LOGIC (With All Countries/Cities API & DB Save) =====
 
 // 1. Token Check (Sirf logged in users ko section dikhana)
 async function checkTokenAndShowMessage() {
@@ -695,7 +806,7 @@ async function checkTokenAndShowMessage() {
             const data = await res.json();
             if (data.success) {
                 document.getElementById("messageSection").style.display = "block";
-                loadCountries(); // ✅ User login hai, countries load karo
+                loadCountries(); // âœ… User login hai, countries load karo
             }
         }
     } catch (err) {
@@ -789,7 +900,7 @@ if (messageForm) {
 
         if (!country || !city || !message) {
             Toastify({
-                text: "⚠️ Please fill all fields!",
+                text: "âš ï¸ Please fill all fields!",
                 duration: 3000,
                 gravity: "top",
                 position: "right",
@@ -806,7 +917,7 @@ if (messageForm) {
                 credentials: "include" // Cookie (token) bhi jayegi
             });
 
-            // ✅ FIX: Body ko pehle string mein convert karo, phir bhejo
+            // âœ… FIX: Body ko pehle string mein convert karo, phir bhejo
             const res = await fetch(API_BASE + "/save-message", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -818,7 +929,7 @@ if (messageForm) {
 
             if (data.success) {
                 Toastify({
-                    text: "✅ Message Sent Successfully!",
+                    text: "âœ… Message Sent Successfully!",
                     duration: 3000,
                     gravity: "top",
                     position: "right",
@@ -831,7 +942,7 @@ if (messageForm) {
                 citySelect.innerHTML = '<option value="">-- Choose City --</option>';
             } else {
                 Toastify({
-                    text: "❌ " + (data.message || "Failed to send"),
+                    text: "âŒ " + (data.message || "Failed to send"),
                     duration: 3000,
                     gravity: "top",
                     position: "right",
@@ -841,7 +952,7 @@ if (messageForm) {
         } catch (err) {
             console.log(err);
             Toastify({
-                text: "⚠️ Network Error!",
+                text: "âš ï¸ Network Error!",
                 duration: 3000,
                 gravity: "top",
                 position: "right",
@@ -851,7 +962,7 @@ if (messageForm) {
     });
 }
 
-// ===== 🔥 SIMPLE DARK MAP WITH CUSTOM LOCATIONS =====
+// ===== ðŸ”¥ SIMPLE DARK MAP WITH CUSTOM LOCATIONS =====
 
 const mapDiv = document.getElementById('map');
 
@@ -868,7 +979,7 @@ if (mapDiv) {
         maxZoom: 18
     }).addTo(leafletMap);
 
-    // 🔥 3. GOLDEN MARKER (For Visited Destinations)
+    // ðŸ”¥ 3. GOLDEN MARKER (For Visited Destinations)
     const goldenIcon = L.divIcon({
         html: '<i class="fa-solid fa-location-dot" style="color: #d4bf86; font-size: 30px; filter: drop-shadow(0 0 8px rgba(255,159,28,0.8));"></i>',
         className: '',
@@ -877,7 +988,7 @@ if (mapDiv) {
         popupAnchor: [0, -30]
     });
 
-    // 🔥 4. RED MARKER (For Homeland - Kazakhstan)
+    // ðŸ”¥ 4. RED MARKER (For Homeland - Kazakhstan)
     const homeIcon = L.divIcon({
         html: '<i class="fa-solid fa-location-dot" style="color: #ff4d4d; font-size: 36px; filter: drop-shadow(0 0 10px rgba(255,0,0,0.8));"></i>',
         className: '',
@@ -886,7 +997,7 @@ if (mapDiv) {
         popupAnchor: [0, -36]
     });
 
-    // 🔥 5. CUSTOM LOCATIONS ARRAY
+    // ðŸ”¥ 5. CUSTOM LOCATIONS ARRAY
     const customLocations = [
         // Visited Destinations (Golden Color)
         { lat: -6.2088, lng: 106.8456, name: "Jakarta", desc: "Indonesia", isHome: false },
@@ -898,7 +1009,7 @@ if (mapDiv) {
         { lat: 25.2048, lng: 55.2708, name: "Dubai", desc: "UAE", isHome: false },
         { lat: 41.2995, lng: 69.2401, name: "Tashkent", desc: "Uzbekistan", isHome: false },
 
-        // 🏠 Homeland (Red Color)
+        // ðŸ  Homeland (Red Color)
         { lat: 43.2389, lng: 76.8895, name: "Almaty", desc: "Kazakhstan   Homeland", isHome: true }
     ];
 
@@ -926,10 +1037,10 @@ if (mapDiv) {
 }
 
 
-// ===== 🔥 BIRTHDAY CELEBRATION MODAL & CONFETTI =====
+// ===== ðŸ”¥ BIRTHDAY CELEBRATION MODAL & CONFETTI =====
 
 
-// ===== 🔥 BIRTHDAY CELEBRATION, SNOOZE & CONFETTI =====
+// ===== ðŸ”¥ BIRTHDAY CELEBRATION, SNOOZE & CONFETTI =====
 
 function showBirthdayCelebration(name) {
     startConfetti();
@@ -941,20 +1052,20 @@ function showBirthdayCelebration(name) {
     modal.innerHTML = `
         <div style="background:linear-gradient(145deg, #1a1a1a, #0f0f0f);border:2px solid #d4bf86;border-radius:30px;padding:50px 40px;text-align:center;max-width:500px;width:90%;box-shadow:0 0 60px rgba(255,159,28,0.4);animation:scaleUp 0.5s ease;position:relative;overflow:hidden;">
             
-            <div style="font-size:80px;margin-bottom:20px;animation:bounce 1s infinite alternate;">🎂</div>
+            <div style="font-size:80px;margin-bottom:20px;animation:bounce 1s infinite alternate;">ðŸŽ‚</div>
             
             <h1 style="font-family:'Playfair Display',serif;font-size:48px;background:linear-gradient(90deg,#d4bf86,#F4C430,#ff004c,#d4bf86);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:300% auto;animation:shimmer 2s linear infinite;margin-bottom:10px;">Happy Birthday!</h1>
             
-            <h2 style="font-size:28px;color:white;margin-bottom:20px;">${name} 🎉</h2>
+            <h2 style="font-size:28px;color:white;margin-bottom:20px;">${name} ðŸŽ‰</h2>
             
-            <p style="color:#bbb;font-size:16px;line-height:1.6;margin-bottom:30px;">Wishing you an amazing day filled with love, joy, and creativity. Omari.to family celebrates you today! 🥳</p>
+            <p style="color:#bbb;font-size:16px;line-height:1.6;margin-bottom:30px;">Wishing you an amazing day filled with love, joy, and creativity. Omari.to family celebrates you today! ðŸ¥³</p>
             
-            <button onclick="closeBirthdayModal()" style="padding:15px 40px;background:linear-gradient(45deg,#d4bf86,#dcc78e);color:black;border:none;border-radius:30px;font-size:18px;font-weight:600;cursor:pointer;transition:0.3s;margin-bottom:15px;">Let's Celebrate! 🎈</button>
+            <button onclick="closeBirthdayModal()" style="padding:15px 40px;background:linear-gradient(45deg,#d4bf86,#dcc78e);color:black;border:none;border-radius:30px;font-size:18px;font-weight:600;cursor:pointer;transition:0.3s;margin-bottom:15px;">Let's Celebrate! ðŸŽˆ</button>
             
-            <!-- 🔥 SNOOZE DROPDOWN BUTTON -->
+            <!-- ðŸ”¥ SNOOZE DROPDOWN BUTTON -->
             <div style="position:relative;display:inline-block;margin-left:10px;">
                 <button onclick="toggleSnoozeDropdown()" style="padding:12px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:30px;font-size:14px;cursor:pointer;">
-                    🔕 Snooze <i class="fa-solid fa-chevron-down" style="font-size:10px;margin-left:5px;"></i>
+                    ðŸ”• Snooze <i class="fa-solid fa-chevron-down" style="font-size:10px;margin-left:5px;"></i>
                 </button>
                 
                 <div id="snoozeDropdown" style="display:none;position:absolute;bottom:50px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid #d4bf86;border-radius:15px;padding:10px 0;min-width:180px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:2;">
@@ -968,8 +1079,8 @@ function showBirthdayCelebration(name) {
     document.body.appendChild(modal);
 }
 
-// ✅ Snooze Dropdown Toggle
-// ✅ Snooze Dropdown Toggle
+// âœ… Snooze Dropdown Toggle
+// âœ… Snooze Dropdown Toggle
 function toggleSnoozeDropdown() {
     const dropdown = document.getElementById('snoozeDropdown');
     if (dropdown) {
@@ -982,7 +1093,7 @@ function toggleSnoozeDropdown() {
     }
 }
 
-// ✅ BAHIR CLICK PAR DROPDOWN BAND KARO (Global Event Listener)
+// âœ… BAHIR CLICK PAR DROPDOWN BAND KARO (Global Event Listener)
 window.addEventListener('click', function (e) {
     const dropdown = document.getElementById('snoozeDropdown');
 
@@ -1001,13 +1112,13 @@ window.addEventListener('click', function (e) {
     }
 });
 
-// ✅ Snooze Logic (Minutes mein time lo aur localStorage set karo)
+// âœ… Snooze Logic (Minutes mein time lo aur localStorage set karo)
 function snoozeBirthday(minutes) {
     const remindTime = Date.now() + (minutes * 60 * 1000); // Current time + minutes
     localStorage.setItem("bdayShownTime", remindTime.toString());
 
     Toastify({
-        text: `⏰ Got it! Will remind you in ${minutes} minutes.`,
+        text: `â° Got it! Will remind you in ${minutes} minutes.`,
         duration: 3000,
         gravity: "top",
         position: "center",
@@ -1018,7 +1129,7 @@ function snoozeBirthday(minutes) {
     closeBirthdayModal();
 }
 
-// ✅ Close Modal (Agar celebrate kare toh aaj ke liye dikhana band)
+// âœ… Close Modal (Agar celebrate kare toh aaj ke liye dikhana band)
 function closeBirthdayModal() {
     const modal = document.getElementById('birthdayModalOverlay');
     if (modal) modal.remove();

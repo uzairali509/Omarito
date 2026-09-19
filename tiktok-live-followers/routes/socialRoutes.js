@@ -652,4 +652,42 @@ router.get("/tiktok-grid-videos", async (req, res) => {
     }
 });
 
+// =======================
+// GET /notifications
+// Returns recent video updates for the notification panel
+// =======================
+router.get("/notifications", async (req, res) => {
+    try {
+        const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
+        
+        // Build the allowlist pipeline: match ANY of the allowed accounts
+        const matchStage = {
+            isActive: true,
+            $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
+        };
+        
+        // Sort by createTime descending to get newest first
+        const docs = await Video.find(matchStage)
+            .sort({ createTime: -1 })
+            .limit(limit)
+            .lean();
+        
+        const notifications = docs.map(doc => ({
+            videoId: doc.videoId || doc.tiktok_id,
+            creator: doc.creator,
+            username: doc.username,
+            title: doc.title || doc.description || '',
+            thumbnail: doc.thumbnail,
+            createTime: doc.createTime,
+            platform: 'tiktok',
+            creatorAvatar: doc.avatar
+        }));
+        
+        res.json({ success: true, notifications });
+    } catch (err) {
+        console.error("GET /notifications error:", err);
+        res.status(500).json({ success: false, error: "Failed to fetch notifications" });
+    }
+});
+
 module.exports = router;

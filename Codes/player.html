@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -467,637 +467,26 @@
             display: block;
         }
 
-        .video-wrapper.mode-youtube .video-element {
-            display: none;
-        }
+        .video-wrapper.mode-youtube .video<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Omari.to</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/Codes/style.css">
+    <link rel="icon" href="/Public/Images/Logo.png">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        /* Back Button */
-        .back-btn {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            height: 40px;
-            padding: 0 14px;
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            z-index: 10;
-            transition: background 0.3s, transform 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .back-btn i {
-            font-size: 14px;
-            color: white;
-        }
-
-        .back-btn .back-label {
-            font-size: 13px;
-            color: white;
-            font-weight: 500;
-        }
-
-        .back-btn:hover {
-            background: var(--primary);
-            transform: scale(1.05);
-        }
-
-        .back-btn:hover i,
-        .back-btn:hover .back-label {
-            color: #111;
-        }
-
-        .video-wrapper:hover .controls {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .video-wrapper:not(:hover) .controls {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* ===== CONTROLS ===== */
-        .controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-            display: flex;
-            align-items: center;
-            gap: clamp(0.3rem, 1vw, 0.8rem);
-            padding: clamp(0.5rem, 1.5vw, 1rem) clamp(0.8rem, 1.5vw, 1.2rem);
-            transition: opacity 0.3s ease;
-            z-index: 5;
-        }
-
-        .controls button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: clamp(0.8rem, 1.8vw, 1.3rem);
-            cursor: pointer;
-            transition: 0.3s;
-            padding: 4px;
-        }
-
-        .controls button:hover {
-            color: var(--primary);
-            transform: scale(1.15);
-        }
-
-        .playPause {
-            font-size: clamp(1rem, 2.2vw, 1.6rem) !important;
-        }
-
-        /* Seek Bar */
-        #seekBar {
-            flex: 1;
-            appearance: none;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: height 0.2s ease;
-            position: relative;
-        }
-
-        #seekBar:hover {
-            height: 8px;
-        }
-
-        #seekBar::-webkit-slider-thumb {
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: var(--primary);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(212, 191, 134, 0.5);
-            transition: transform 0.2s;
-        }
-
-        #seekBar::-webkit-slider-thumb:hover {
-            transform: scale(1.3);
-        }
-
-        .counting {
-            font-size: clamp(0.5rem, 1.1vw, 0.85rem);
-            color: #ccc;
-            white-space: nowrap;
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* Volume */
-        .volumediv {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .volume-popup {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(15, 15, 15, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 12px 8px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 159, 28, 0.2);
-            margin-bottom: 10px;
-            min-width: 50px;
-        }
-
-        .volumediv:hover .volume-popup {
-            display: flex;
-        }
-
-        #volumeBar {
-            appearance: none;
-            height: 8px;
-            width: 80px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.15);
-            cursor: pointer;
-        }
-
-        #volumeBar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 14px;
-            width: 14px;
-            border-radius: 50%;
-            background: white;
-            border: 2px solid var(--primary);
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(212, 191, 134, 0.4);
-        }
-
-        #volumeDisplay {
-            color: var(--primary);
-            font-size: 11px;
-            font-weight: 600;
-            margin-top: 6px;
-            text-align: center;
-        }
-
-        .volumerange {
-            display: flex;
-            flex-direction: row;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .volumerange button {
-            width: 28px;
-            height: 24px;
-            background: var(--primary) !important;
-            color: black !important;
-            border-radius: 6px;
-            font-size: 12px !important;
-            font-weight: 700;
-            transition: 0.2s !important;
-        }
-
-        .volumerange button:hover {
-            background: var(--secondary) !important;
-            transform: scale(1.1) !important;
-        }
-
-        .volumebtn {
-            color: white;
-            font-size: clamp(0.8rem, 1.8vw, 1.3rem);
-        }
-
-        /* Fullscreen */
-        .fullscreenbtn {
-            font-size: clamp(0.9rem, 2vw, 1.5rem) !important;
-            transition: transform 0.2s ease !important;
-        }
-
-        .fullscreenbtn:hover {
-            transform: scale(1.2) !important;
-        }
-
-        /* Options Toggle */
-        .togglediv {
-            position: relative;
-        }
-
-        .togglepopup {
-            width: 120px;
-            text-align: center;
-            background: rgba(15, 15, 15, 0.95);
-            backdrop-filter: blur(20px);
-            position: absolute;
-            bottom: 40px;
-            right: 0;
-            border-radius: 10px;
-            display: none;
-            border: 1px solid rgba(255, 159, 28, 0.2);
-            overflow: hidden;
-        }
-
-        .togglepopup button {
-            padding: 10px 15px;
-            width: 100%;
-            font-size: 13px !important;
-            color: white !important;
-            transition: 0.3s !important;
-        }
-
-        .togglepopup button:hover {
-            background: var(--primary) !important;
-            color: black !important;
-        }
-
-        /* Fullscreen Mode */
-        .video-wrapper:fullscreen {
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0;
-            border: none;
-        }
-
-        .video-wrapper:fullscreen video {
-            object-fit: contain;
-        }
-
-        .video-wrapper:fullscreen .controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-
-        /* Video Title */
-        #videoTitle {
-            font-family: "Playfair Display", serif;
-            font-size: 22px;
-            margin-top: 18px;
-            font-weight: 500;
-            color: white;
-            padding: 0 5px;
-        }
-
-        .video-meta {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
-            padding: 0 5px;
-        }
-
-        .video-meta span {
-            color: #888;
-            font-size: 13px;
-        }
-
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .sidebar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 10px;
-        }
-
-        .sidebar h3 {
-            font-family: "Playfair Display", serif;
-            font-size: 20px;
-            margin-bottom: 8px;
-            color: var(--primary);
-            border-bottom: 1px solid rgba(255, 159, 28, 0.15);
-            padding-bottom: 10px;
-        }
-
-        /* Suggested Card */
-        .suggested-card {
-            display: flex;
-            gap: 12px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px;
-            border-radius: 12px;
-            transition: 0.3s;
-            border: 1px solid transparent;
-            position: relative;
-        }
-
-        .suggested-card:hover {
-            background: rgba(255, 159, 28, 0.06);
-            border-color: rgba(255, 159, 28, 0.15);
-            transform: translateX(-5px);
-        }
-
-        .suggested-card img {
-            width: 130px;
-            height: 75px;
-            object-fit: cover;
-            border-radius: 8px;
-            flex-shrink: 0;
-        }
-
-        .suggested-info {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .suggested-title {
-            font-size: 13px;
-            line-height: 1.4;
-            color: #ddd;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .suggested-duration {
-            font-size: 11px;
-            color: var(--primary);
-        }
-
-        .suggested-card.active-card {
-            background: rgba(255, 159, 28, 0.1);
-            border-color: rgba(255, 159, 28, 0.3);
-        }
-
-        /* ===== LOADER ===== */
-        #loader {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at center, #111 40%, #000);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
-
-        .spinner {
-            width: 70px;
-            height: 70px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        #loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ===== CONNECTION STATUS ===== */
-        #connectionStatus {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            transform: translateX(-50%);
-            padding: 6px 20px;
-            border-radius: 10px 10px 0 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: white;
-            background: #333;
-            z-index: 9999;
-            transition: background 0.4s ease, transform 0.3s ease, opacity 0.4s ease;
-        }
-
-        #connectionStatus.online {
-            background: linear-gradient(90deg, #28a745, #45c76d);
-        }
-
-        #connectionStatus.offline {
-            background: linear-gradient(90deg, #d9534f, #ff6b6b);
-        }
-
-        #connectionStatus.hide {
-            opacity: 0;
-            transform: translate(-50%, 100%);
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 900px) {
-            .player-page {
-                flex-direction: column;
-                padding: 85px 2% 20px;
-                gap: 20px;
-            }
-
-            .sidebar {
-                max-height: none;
-                overflow-y: visible;
-            }
-
-            .video-wrapper {
-                border-radius: 12px;
-            }
-
-            #videoTitle {
-                font-size: 18px;
-            }
-
-            .controls {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 0.4rem;
-            }
-
-            #seekBar {
-                order: 3;
-                width: 90%;
-                flex: none;
-            }
-
-            .counting {
-                order: 4;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .suggested-card img {
-                width: 100px;
-                height: 60px;
-            }
-
-            .suggested-title {
-                font-size: 12px;
-            }
-
-            .player-page {
-                padding: 80px 1% 15px;
-            }
-        }
-
-        /* Portrait Video */
-        .video-wrapper.portrait video {
-            object-fit: contain;
-        }
-
-        /* Landscape Video - fill more */
-        .video-wrapper.landscape video {
-            object-fit: contain;
-        }
-
-        /* ===== PLAYER MODES ===== */
-        /* YouTube: iframe fills the wrapper, custom controls hidden
-           (the embedded player provides its own) */
-        #ytContainer {
-            width: 100%;
-            height: 100%;
-        }
-
-        #ytContainer iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
-        .video-wrapper.mode-youtube .controls {
-            display: none !important;
-        }
-
-        /* TikTok embed iframe */
-        #ttContainer {
-            width: 100%;
-            height: 100%;
-        }
-
-        #ttContainer iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
-        .video-wrapper.mode-tiktok .controls {
-            display: none !important;
-        }
-
-        /* TikTok: portrait stage centered inside the main area */
-        .video-wrapper.mode-tiktok {
-            aspect-ratio: 9/16;
-            max-width: 430px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        /* Watch-on-TikTok fallback (shown when embed fails) */
-        #tiktokFallback {
-            position: absolute;
-            inset: 0;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #tiktokFallback img {
-            flex: 1;
-            width: 100%;
-            min-height: 0;
-            object-fit: cover;
-            filter: brightness(0.65);
-        }
-
-        #tiktokFallback a {
-            position: absolute;
-            left: 50%;
-            bottom: 12%;
-            transform: translateX(-50%);
-            padding: 12px 26px;
-            border-radius: 30px;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            color: #111;
-            font-weight: 600;
-            font-size: 15px;
-            white-space: nowrap;
-            box-shadow: 0 6px 25px rgba(212, 191, 134, 0.35);
-            transition: 0.3s;
-        }
-
-        #tiktokFallback a:hover {
-            transform: translateX(-50%) scale(1.06);
-        }
-
-        /* Up Next source badge (TikTok / YouTube) */
-        .suggested-type {
-            position: absolute;
-            top: 6px;
-            left: 6px;
-            padding: 1px 7px;
-            border-radius: 5px;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: .5px;
-            text-transform: uppercase;
-        }
-
-        .suggested-type.tt {
-            background: rgba(37, 244, 238, 0.9);
-            color: #111;
-        }
-
-        .suggested-type.yt {
-            background: rgba(255, 0, 0, 0.85);
-            color: #fff;
-        }
-
-        .suggested-thumb {
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .suggested-card .suggested-duration {
-            font-size: 11px;
-            color: var(--primary);
-        }
-
-        .suggested-stats {
-            display: flex;
-            gap: 8px;
-            font-size: 10px;
-            color: #888;
-            margin-top: 2px;
-        }
-    </style>
 </head>
 
 <body>
@@ -1173,6 +562,140 @@
         </div>
     </nav>
 
+
+
+    <!-- 🔥 PROFILE DETAILS PANEL (Initially Hidden) -->
+    <section class="profile-panel" id="profilePanel" style="display: none;">
+
+        <h3 id="userEmail"></h3>
+
+        <div class="panel-profile-box">
+            <img id="panelProfileImg" src="/Public/Images/default-user.png">
+        </div>
+
+        <div class="panel-logindata">
+            <p><strong>Name:</strong> <span id="userName"></span></p>
+            <p><strong>Age:</strong> <span id="userAge"></span></p>
+            <p><strong>Date:</strong> <span id="userDate"></span></p>
+        </div>
+
+        <div class="panel-actions">
+            <button type="button" id="logoutBtn">LogOut</button>
+            <button type="button" id="deleteAccBtn">Delete Account</button>
+            <a href="/Codes/settings.html"><button type="button" class="settings-btn">Change Something Else</button></a>
+        </div>
+    </section>
+
+    <!-- HERO SECTION -->
+    <!-- HERO SECTION WITH BACKGROUND SLIDER -->
+    <section class="aboutsection">
+
+        <!-- 🔥 BACKGROUND IMAGE SLIDER -->
+        <div class="bg-slider-container">
+            <div class="bg-slider-track" id="bgSliderTrack">
+                <div class="bg-slide"><img src="/Public/Images/655855795_18080161883385225_3655861008655305912_n.jpg"
+                        alt="Background 1"></div>
+                <div class="bg-slide"><img src="/Public/Images/658365636_18116669287727912_4327074529244884452_n.jpg"
+                        alt="Background 2"></div>
+                <div class="bg-slide"><img src="/Public/Images/654126269_18091809533122491_3541421282716877229_n.jpg"
+                        alt="Background 3"></div>
+                <div class="bg-slide"><img src="/Public/Images/652795350_17982825659809621_4708966866660782664_n.jpg"
+                        alt="Background 4"></div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <button class="bg-slider-btn prev-bg-btn" id="bgPrevBtn">&#10094;</button>
+            <button class="bg-slider-btn next-bg-btn" id="bgNextBtn">&#10095;</button>
+
+            <!-- Pagination Dots -->
+            <div class="bg-slider-dots" id="bgSliderDots">
+                <span class="bg-dot active"></span>
+                <span class="bg-dot"></span>
+                <span class="bg-dot"></span>
+                <span class="bg-dot"></span>
+            </div>
+        </div>
+
+        <!-- 🔥 HEADING (Overlaid on top of background slider) -->
+        <div class="about-content">
+            <h1>
+                The <span id="asiaRank" style="color: #FF9F1C; font-weight: bold;">Updating...</span>
+                Biggest Influencer & Tiktoker in Asia
+                <br>
+
+                The <span id="worldRank" style="color: #FF9F1C; font-weight: bold;">Updating...</span>
+                Biggest Influencer & Tiktoker in World
+                <br>
+
+                The <span id="kzRank" style="color: #FF9F1C; font-weight: bold;">Updating...</span>
+                Biggest Influencer in Kazakhstan
+            </h1>
+        </div>
+
+    </section>
+
+    <!-- 🔥 QR / PROFILES DROPDOWN SECTION -->
+    <section class="profiles-section">
+
+        <!-- Clickable Header -->
+        <div class="profiles-header" id="profilesToggle">
+            <h2>Get QR Codes of Users <i class="fa-solid fa-chevron-down" id="dropdownArrow"></i></h2>
+            <p>Click to explore and download profiles</p>
+        </div>
+
+        <!-- Dropdown Content (Initially Hidden) -->
+        <div class="profiles-dropdown" id="profilesDropdown">
+
+            <div class="profile-cards-grid">
+
+                <!-- Card 1: Omari -->
+                <div class="profile-card">
+                    <div class="profile-img-box">
+                        <img src="/Public/Images/Scanner/1000044954.png" alt="Omar" onclick="openLightbox(this)"
+                            data-name="Omar" data-username="@omari.to">
+                        <div class="online-dot"></div>
+                    </div>
+                    <h3>Omar</h3>
+                    <p>@omari.to</p>
+                    <button class="profile-btn" onclick="window.open('https://www.tiktok.com/@omari.to', '_blank')">
+                        <i class="fa-brands fa-tiktok"></i> View Profile
+                    </button>
+                </div>
+
+                <!-- Card 2: Dylan -->
+                <div class="profile-card">
+                    <div class="profile-img-box">
+                        <img src="/Public/Images/Scanner/1000044955.png" alt="Dylan" onclick="openLightbox(this)"
+                            data-name="Dylan" data-username="@dilandyalieva">
+                        <div class="online-dot"></div>
+                    </div>
+                    <h3>Dylan</h3>
+                    <p>@dilandyalieva</p>
+                    <button class="profile-btn"
+                        onclick="window.open('https://www.tiktok.com/@dilandyalieva', '_blank')">
+                        <i class="fa-brands fa-tiktok"></i> View Profile
+                    </button>
+                </div>
+
+                <!-- Card 3: Sufiya -->
+                <div class="profile-card">
+                    <div class="profile-img-box">
+                        <img src="/Public/Images/Scanner/1000044956 (1).png" alt="Sufiya" onclick="openLightbox(this)"
+                            data-name="Sufiya" data-username="@hello.safia">
+                        <div class="online-dot"></div>
+                    </div>
+                    <h3>Sufiya</h3>
+                    <p>@hello.safia</p>
+                    <button class="profile-btn" onclick="window.open('https://www.tiktok.com/@hello.safia', '_blank')">
+                        <i class="fa-brands fa-tiktok"></i> View Profile
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </section>
+
     <div id="connectionStatus" class="status-bar online">
         🔴 Offline
     </div>
@@ -1181,1177 +704,748 @@
         <img src="/Public/Images/Logo.png" class="spinner">
     </div>
 
-    <!-- ===== PLAYER PAGE ===== -->
-    <div class="player-page">
 
-        <!-- MAIN PLAYER -->
-        <div class="main-player">
-            <div class="video-wrapper" id="videoWrapper">
 
-                <!-- Back Button -->
-                <div class="back-btn" id="backBtn">
-                    <i class="fa-solid fa-arrow-left"></i>
-                    <span class="back-label">Back</span>
-                </div>
+    <!-- 🔥 FEATURES / LEGENDS SECTION -->
+    <section class="legends-section">
 
-                <!-- Native video element for TikTok (when using direct MP4) -->
-                <video id="video" class="video-element" playsinline></video>
+        <!-- Legend Heading (Line sirf upar) -->
+        <div class="legend-heading">
+            <h2>What We Are Offering</h2>
+        </div>
 
-                <!-- TikTok embed iframe (official TikTok player) -->
-                <div id="ttContainer" style="display: none;"></div>
+        <!-- Category Buttons -->
+        <div class="legend-categories">
+            <button class="cat-btn active" onclick="filterLegends('all', this)">All</button>
+            <button class="cat-btn" onclick="filterLegends('omar', this)">About Omar</button>
+            <button class="cat-btn" onclick="filterLegends('family', this)">Family</button>
+            <button class="cat-btn" onclick="filterLegends('journey', this)">Journey</button>
+            <button class="cat-btn" onclick="filterLegends('homeLand', this)">HomeLand</button>
+            <button class="cat-btn" onclick="filterLegends('city', this)">HomeLand City</button>
+            <button class="cat-btn" onclick="filterLegends('culture', this)">HomeLand Culture</button>
+            <button class="cat-btn" onclick="filterLegends('travel', this)">Travel</button>
+        </div>
 
-                <!-- YouTube embed target (YouTube IFrame API mounts here) -->
-                <div id="ytContainer" style="display: none;"></div>
+        <!-- Sections Container -->
+        <div class="legends-container">
 
-                <!-- Fallback when embed fails:
-                     thumbnail + "Watch on TikTok" -->
-                <div id="tiktokFallback" style="display: none;">
-                    <img id="fallbackThumb" src="" alt="thumbnail">
-                    <a id="watchOnTikTok" href="#" target="_blank" rel="noopener">
-                        <i class="fa-brands fa-tiktok"></i> Watch on TikTok
-                    </a>
-                </div>
+            <!-- Section 1: Right Image, Left Text -->
+            <div class="legend-row" data-category="omar">
+                <div class="legend-text scrollable-box">
+                    <h3>About Omar</h3>
 
-                <!-- Controls (native TikTok player only; YouTube iframe has its own) -->
-                <div class="controls" id="controls">
-                    <button id="playPause" class="playPause">▶</button>
+                    <!-- 🔥 PROFESSIONAL INFO CARD -->
+                    <div class="info-card">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <i class="fa-solid fa-cake-candles"></i>
+                                <div class="info-text">
+                                    <span class="info-label">Birthday</span>
+                                    <span class="info-value">December 14, 2006</span>
+                                </div>
+                            </div>
 
-                    <input type="range" id="seekBar" value="0" step="1">
+                            <div class="info-item">
+                                <i class="fa-solid fa-hourglass-half"></i>
+                                <div class="info-text">
+                                    <span class="info-label">Age</span>
+                                    <span class="info-value">19 years old</span>
+                                </div>
+                            </div>
 
-                    <span class="counting">
-                        <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
-                    </span>
+                            <div class="info-item">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div class="info-text">
+                                    <span class="info-label">Place of Birth</span>
+                                    <span class="info-value">Astana, Kazakhstan</span>
+                                </div>
+                            </div>
 
-                    <!-- Volume -->
-                    <div class="volumediv">
-                        <button id="volumeBtn">
-                            <i class="fa-solid fa-volume-high volumebtn"></i>
-                        </button>
-                        <div class="volume-popup">
-                            <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="1">
-                            <div id="volumeDisplay">100%</div>
-                            <div class="volumerange">
-                                <button id="volPlus">+</button>
-                                <button id="volMinus">−</button>
+                            <div class="info-item">
+                                <i class="fa-solid fa-star"></i>
+                                <div class="info-text">
+                                    <span class="info-label">Astrological Sign</span>
+                                    <span class="info-value">Sagittarius</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <p>Omari.to is a modern digital media and content creation brand focused on delivering engaging
+                        short-form entertainment, viral social media experiences, and creative online storytelling for a
+                        global audience. Built around the fast-growing world of social platforms and digital culture,
+                        Omari.to represents a new generation of online creators who combine creativity, technology, and
+                        entertainment into one interactive experience.
 
-                    <!-- Fullscreen -->
-                    <button id="fullscreenBtn" class="fullscreenbtn">
-                        <i id="fullscreenIcon" class="fa-solid fa-expand"></i>
-                    </button>
+                        Social media personality and TikTok content creator who rose to fame through the use of his
+                        omari.to account. He shares lip-sync and comedy videos that often incorporate the platform's
+                        filters for effect.
 
-                    <!-- Options -->
-                    <div class="togglediv">
-                        <button class="togglebtn" id="togglebtn">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
-                        </button>
-                        <div class="togglepopup" id="togglepopup">
-                            <button id="downloadbtn">
-                                <i class="fa-solid fa-download"></i> Download
-                            </button>
-                        </div>
-                    </div>
+                        The platform is primarily recognized through its TikTok presence, where it shares trending
+                        videos, creative edits, entertainment clips, and engaging media content designed for viewers who
+                        enjoy modern social entertainment. With the rapid growth of platforms like TikTok, short-form
+                        video content has become one of the most influential forms of digital communication, and
+                        Omari.to participates in this space by producing visually engaging and audience-focused content.
+
+                        Omari.to focuses on creating content that is fast, entertaining, visually appealing, and
+                        optimized for modern audiences who consume media through mobile devices and social networking
+                        platforms. The brand reflects the evolution of online entertainment, where creators are able to
+                        build communities and digital identities through consistent creative output and audience
+                        interaction.</p>
+                    <p>In addition to social media content, Omari.to also represents a broader digital identity that can
+                        include web experiences, media branding, creative design, and online community engagement. The
+                        platform’s visual style and online presentation are inspired by modern digital trends, combining
+                        simplicity with strong visual impact to create an immersive experience for viewers and
+                        followers.
+
+                        One of the core strengths of Omari.to is its focus on audience engagement. Through trending
+                        media formats, short-form storytelling, and creative edits, the platform aims to keep viewers
+                        entertained while maintaining a recognizable digital presence. As social media continues to
+                        shape online culture, brands like Omari.to demonstrate how digital creators can use technology
+                        and creativity together to build communities and reach international audiences.
+
+                        The rise of TikTok and other short-video platforms has transformed the entertainment industry by
+                        giving creators direct access to millions of viewers worldwide. Omari.to operates within this
+                        rapidly growing ecosystem, contributing creative media content designed for fast-paced digital
+                        consumption. The platform’s content style reflects current trends in online entertainment,
+                        including viral edits, social engagement, modern visual effects, and internet culture.
+
+                        Omari.to also highlights the importance of personal branding in the digital age. Through
+                        consistent online identity, recognizable content themes, and audience-focused creativity, the
+                        platform establishes itself as part of the broader creator economy — a digital environment where
+                        creators, influencers, and online personalities build communities and share entertainment
+                        through internet-based platforms.
+
+                        As digital entertainment continues to evolve, platforms like Omari.to showcase how independent
+                        creators and media brands can combine creativity, social networking, and technology to connect
+                        with viewers around the world. Whether through TikTok videos, digital branding, or online media
+                        experiences, Omari.to represents a modern approach to internet entertainment and creative
+                        content production.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/587413181_18073832234580164_693961671492352226_n.jpg" alt="About Omar">
                 </div>
             </div>
 
-            <h2 id="videoTitle">Loading video...</h2>
-            <div class="video-meta">
-                <span id="metaCreator"></span>
-                <span id="metaViews"></span>
-                <span id="metaLikes"></span>
-                <span id="metaComments"></span>
-                <span id="metaShares"></span>
-                <span id="metaDuration"></span>
-                <span id="metaDate"></span>
-                <span id="videoResolution"></span>
-            </div>
 
-            <!-- Like Button -->
-            <div class="like-section">
-                <button id="likeBtn" class="like-btn">
-                    <i class="fa-regular fa-heart" id="likeIcon"></i>
-                    <span id="likeCount">0</span>
-                </button>
-            </div>
+            <!-- Section 2: Left Image, Right Text -->
+            <div class="legend-row reverse" data-category="family">
+                <div class="legend-text scrollable-box">
+                    <h3>Family</h3>
+                    <p>The Omari.to brand is known not only for its digital content and social media presence, but also
+                        for the strong creative support system behind the platform. The family members connected with
+                        the Omari.to community have appeared in various social media moments, helping create a friendly
+                        and engaging online environment for viewers and followers.
 
-            <!-- Comments Section -->
-            <div class="comments-section">
-                <h3>Comments</h3>
-                <div id="commentsList" class="comments-list"></div>
-                <div class="comment-input-section">
-                    <textarea id="commentInput" placeholder="Add a comment..." rows="3"></textarea>
-                    <button id="postCommentBtn" class="post-comment-btn">Post Comment</button>
+                        Several members associated with the Omari.to social presence are also active in digital content
+                        creation and online entertainment. Through TikTok videos, lifestyle content, and social media
+                        interaction, they contribute to the creative identity of the brand and help strengthen its
+                        connection with audiences across different platforms.
+
+                        His younger sister often makes appearances in his content. His niece has helped him with his
+                        videos over the years.
+
+
+                    </p>
+                    <p>The Omari.to community reflects the modern creator culture where family support, teamwork, and
+                        social media creativity come together to build an engaging digital experience. Their online
+                        presence highlights entertainment, positivity, and creative collaboration through short-form
+                        videos and trending internet content.
+
+                        As social media continues to evolve, collaborative creator families and digital teams have
+                        become an important part of the online entertainment industry. Omari.to represents this new
+                        generation of creators who combine creativity, media production, and audience engagement into a
+                        growing online brand.</p>
+                </div>
+                <div class="legend-image">
+                    <img style="object-fit: cover;" src="/Public/Images/Family Members.png" alt="Family">
                 </div>
             </div>
-        </div>
 
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <h3>Up Next</h3>
-            <div id="suggestedVideos"></div>
-        </div>
+            <!-- Section 1: Right Image, Left Text -->
+            <div class="legend-row" data-category="journey">
+                <div class="legend-text scrollable-box">
+                    <h3>Omari.to Journey & Challenges</h3>
+                    <p>Like many modern digital creators and online media brands, Omari.to represents the challenges,
+                        growth, and dedication required to build a presence in today’s fast-moving social media world.
+                        Growing an online identity through platforms like TikTok is not an easy process. Behind every
+                        video, creative post, and successful piece of content, there are countless hours of editing,
+                        planning, experimenting, and audience engagement.
 
-    </div>
+                        One of the biggest struggles for digital creators is standing out in a highly competitive online
+                        environment where millions of videos are uploaded every day. Building recognition requires
+                        consistency, creativity, and the ability to adapt to constantly changing social media trends and
+                        algorithms. Omari.to reflects the journey of creators who continue producing content despite
+                        challenges such as limited reach, changing platform systems, and the pressure to stay active
+                        online.
 
-    <div id="journeyOverlay" class="journey-overlay">
-        <div class="journey-text">
-            <h2 id="overlayTitle"></h2>
-            <p id="overlayDesc"></p>
-            <div class="loading-bar">
-                <div class="loading-progress"></div>
+                        Content creation also demands continuous innovation. Audiences on social media quickly move
+                        toward new trends, styles, and entertainment formats, making it important for creators to remain
+                        creative and original. For brands like Omari.to, maintaining audience attention while developing
+                        a recognizable identity is a long-term challenge that requires dedication and patience.
+
+                        Another major challenge in the digital creator world is balancing online activity with personal
+                        growth and real-life responsibilities. Social media creators often work independently, handling
+                        video production, editing, branding, content management, and audience interaction on their own.
+                        This creates pressure to consistently deliver engaging content while maintaining quality and
+                        originality.
+
+                    </p>
+                    <p>The rise of short-form platforms such as TikTok has also increased competition globally.
+                        Creators from around the world compete for visibility, trends change rapidly, and online
+                        audiences expect fast and entertaining content every day. Omari.to represents the persistence
+                        and determination commonly seen in modern creators who continue improving their content and
+                        digital presence despite these obstacles.
+
+                        Technical issues, platform updates, algorithm changes, and audience expectations are additional
+                        challenges faced by many creators. Building a successful online brand requires more than
+                        uploading videos — it involves branding, community building, creative direction, and long-term
+                        consistency. The journey of platforms like Omari.to highlights how modern creators continue
+                        learning, adapting, and growing in an ever-changing digital environment.
+
+                        Despite the challenges, the creator journey also represents ambition, creativity, and passion
+                        for digital media. Omari.to reflects the spirit of modern online entertainment where creators
+                        use social platforms to connect with audiences, share creative ideas, and build communities
+                        through content and storytelling.</p>
+                </div>
+                <div class="legend-image">
+                    <img style="object-fit: scale-down;" src="/Public/Images/Challenges-Efforts.png" alt="World Travel">
+                </div>
             </div>
-        </div>
-    </div>
-
-
-
-    <script>
-        // ===== ELEMENTS =====
-        const video = document.getElementById('video');
-        const playPauseBtn = document.getElementById('playPause');
-        const seekBar = document.getElementById('seekBar');
-        const currentTimeDisplay = document.getElementById('currentTime');
-        const durationDisplay = document.getElementById('duration');
-        const volumeBar = document.getElementById('volumeBar');
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const fullscreenIcon = document.getElementById('fullscreenIcon');
-        const videoWrapper = document.getElementById('videoWrapper');
-        const volumeBtn = document.getElementById('volumeBtn');
-        const volumeIcon = volumeBtn.querySelector('i');
-        const togglebtn = document.getElementById('togglebtn');
-        const togglepopup = document.getElementById('togglepopup');
-        const plusBtn = document.getElementById('volPlus');
-        const minusBtn = document.getElementById('volMinus');
-        const downloadBtn = document.getElementById('downloadbtn');
-        const volumeDisplay = document.getElementById('volumeDisplay');
-        const backBtn = document.getElementById('backBtn');
-        const videoTitle = document.getElementById('videoTitle');
-
-        let lastVolume = 1;
-        let audioContext;
-
-        // ===== CONFIG (player.html?type=youtube&id=<ytId> | ?type=tiktok&id=<videoId>) =====
-        // API_BASE is declared ONCE in /Codes/script.js — never redeclare here.
-        const API_KEY = "AIzaSyBtqSE00ra7_NoRg3EGuipaq75VIBDsecg";
-        const ytContainer = document.getElementById('ytContainer');
-        const ttContainer = document.getElementById('ttContainer');
-        const tiktokFallback = document.getElementById('tiktokFallback');
-
-        // The project's allowed YouTube videos (Omari.to channel) — same
-        // list as videos.html; used to mix YouTube picks into Up Next.
-        const YT_VIDEO_IDS = [
-            "NonjJz3Itm0", "97PvHHgo78k", "Gx0Gu9MoLUE", "aJuZJ8IGVr8",
-            "uPCH8abY5UI", "rWg2q3dFD08", "fqPCgZxxTYo", "qJDYOVGmLs4",
-            "vHyAsLKjdX4", "NdbTxmYPIZs", "7o_i_kGq5RM", "vw1zpys_zHM",
-            "kMnvsihmzK0", "ez68g8AMMfE", "rkYNlgVchmk", "_e1y0l_ckow",
-            "b0J63AAl8Bg", "XWmpoRUiVN0", "JDEgQ2fJKN0", "zHX8MFvSodQ",
-            "igcjkzZML3w", "mYH2PJqolzw", "Bf2dK2Xmjbk", "qaBURJoADms",
-            "bpevDcof9Bs", "KUGpsa2GLl0", "biZr5G97Jkg", "LZ94lFQhzAU",
-            "gFoXE0d-M84", "ddTeh2C6cQI", "FhATNJMKkhU", "fUwUtnd3RR4",
-            "onKLR8d6KDs", "dChJCHjyF5k"
-        ];
-
-        function urlParam(name) {
-            return new URLSearchParams(window.location.search).get(name) || "";
-        }
-
-        function formatStat(num) {
-            if (num === null || num === undefined) return "0";
-            const n = Number(num);
-            if (isNaN(n)) return "0";
-            if (n < 1000) return n.toString();
-            function clean(val, suffix) {
-                let s = val < 1000 ? val.toFixed(2) : Math.round(val).toString();
-                if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
-                return s + suffix;
-            }
-            if (n < 1000000) return clean(n / 1000, "K");
-            if (n < 1000000000) return clean(n / 1000000, "M");
-            return clean(n / 1000000000, "B");
-        }
-
-        function formatDuration(secs) {
-            secs = Math.round(Number(secs) || 0);
-            if (!secs) return "";
-            const h = Math.floor(secs / 3600);
-            const m = Math.floor((secs % 3600) / 60);
-            const s = secs % 60;
-            return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-                : `${m}:${String(s).padStart(2, "0")}`;
-        }
-
-        function parseISODuration(iso) {
-            if (!iso) return null;
-            const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-            if (!m) return null;
-            return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
-        }
-
-        function shuffle(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        function escapeHtml(s) {
-            return String(s || "").replace(/[&<>"']/g, c => (
-                { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
-            ));
-        }
-
-        // ===== INIT AUDIO CONTEXT =====
-        function initAudio() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            audioContext.resume();
-        }
-
-        // ===== PLAY / PAUSE =====
-        playPauseBtn.addEventListener('click', togglePlay);
-
-        video.addEventListener('click', () => {
-            initAudio();
-            togglePlay();
-        });
-
-        video.addEventListener('dblclick', toggleFullscreen);
-
-        video.addEventListener('ended', () => {
-            playPauseBtn.textContent = '▶';
-            playNext();
-        });
-
-        function togglePlay() {
-            initAudio();
-            if (video.paused) {
-                video.play();
-                playPauseBtn.textContent = '⏸';
-            } else {
-                video.pause();
-                playPauseBtn.textContent = '▶';
-            }
-        }
-
-        // ===== TIME FORMAT =====
-        function formatTime(time) {
-            if (isNaN(time)) return '0:00';
-            const h = Math.floor(time / 3600);
-            const m = Math.floor((time % 3600) / 60);
-            const s = Math.floor(time % 60).toString().padStart(2, '0');
-            return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${s}` : `${m}:${s}`;
-        }
-
-        // ===== SEEK BAR =====
-        function updateSeekBar() {
-            const percent = (video.currentTime / video.duration) * 100 || 0;
-            seekBar.style.background = `linear-gradient(to right, var(--primary) ${percent}%, rgba(255,255,255,0.15) ${percent}%)`;
-        }
-
-        video.addEventListener('timeupdate', () => {
-            seekBar.value = video.currentTime;
-            currentTimeDisplay.textContent = formatTime(video.currentTime);
-            updateSeekBar();
-        });
-
-        seekBar.addEventListener('input', () => {
-            video.currentTime = seekBar.value;
-            updateSeekBar();
-        });
-
-        video.addEventListener('loadedmetadata', () => {
-            seekBar.max = video.duration;
-            durationDisplay.textContent = formatTime(video.duration);
-            updateSeekBar();
-
-            // Resolution info
-            const resSpan = document.getElementById('videoResolution');
-            if (resSpan && video.videoWidth && video.videoHeight) {
-                resSpan.textContent = `${video.videoWidth}×${video.videoHeight}`;
-            }
-
-            // Portrait/Landscape class
-            if (video.videoWidth > video.videoHeight) {
-                videoWrapper.classList.add('landscape');
-                videoWrapper.classList.remove('portrait');
-            } else {
-                videoWrapper.classList.add('portrait');
-                videoWrapper.classList.remove('landscape');
-            }
-        });
-
-        // ===== VOLUME =====
-        volumeBtn.addEventListener('click', () => {
-            if (video.volume > 0) {
-                lastVolume = video.volume;
-                setVolume(0);
-            } else {
-                setVolume(lastVolume);
-            }
-        });
-
-        volumeBar.addEventListener('input', () => {
-            setVolume(volumeBar.value);
-        });
-
-        plusBtn.addEventListener('click', () => setVolume(video.volume + 0.05));
-        minusBtn.addEventListener('click', () => setVolume(video.volume - 0.05));
-
-        function setVolume(value) {
-            value = Math.max(0, Math.min(value, 1));
-            video.volume = value;
-            volumeBar.value = value;
-            updateVolumeIcon();
-            updateVolumeBar();
-        }
-
-        function updateVolumeIcon() {
-            if (video.volume === 0) {
-                volumeIcon.className = 'fa-solid fa-volume-xmark volumebtn';
-            } else if (video.volume <= 0.3) {
-                volumeIcon.className = 'fa-solid fa-volume-off volumebtn';
-            } else if (video.volume <= 0.7) {
-                volumeIcon.className = 'fa-solid fa-volume-low volumebtn';
-            } else {
-                volumeIcon.className = 'fa-solid fa-volume-high volumebtn';
-            }
-        }
-
-        function updateVolumeBar() {
-            const percent = (volumeBar.value / volumeBar.max) * 100;
-            volumeBar.style.background = `linear-gradient(to right, var(--primary) ${percent}%, rgba(255,255,255,0.15) ${percent}%)`;
-            volumeDisplay.textContent = Math.round(video.volume * 100) + '%';
-        }
-
-        // ===== FULLSCREEN =====
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
-
-        function toggleFullscreen() {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-                fullscreenIcon.classList.replace('fa-compress', 'fa-expand');
-            } else {
-                videoWrapper.requestFullscreen();
-                fullscreenIcon.classList.replace('fa-expand', 'fa-compress');
-            }
-        }
-
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                fullscreenIcon.classList.replace('fa-compress', 'fa-expand');
-            }
-        });
-
-        // ===== OPTIONS TOGGLE =====
-        togglebtn.addEventListener('click', () => {
-            togglepopup.style.display = togglepopup.style.display === 'block' ? 'none' : 'block';
-        });
-
-        // Close popup when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.togglediv')) {
-                togglepopup.style.display = 'none';
-            }
-        });
-
-        // Download is handled by the authenticated handleDownload() below.
-        // Do NOT add an unguarded click listener here — it would bypass auth.
-
-        // ===== BACK BUTTON =====
-        // Remember where the user came from (creator/playlist page)
-        // so Back always returns there, even after switching videos.
-        // Store in sessionStorage to persist across video switches.
-        const _sourceUrl = (() => {
-            try {
-                const ref = document.referrer;
-                if (ref && (ref.includes('videos.html') || ref.includes('player.html'))) {
-                    sessionStorage.setItem('playerSourceUrl', ref);
-                    return ref;
-                }
-                // Fallback to sessionStorage if referrer is empty
-                const stored = sessionStorage.getItem('playerSourceUrl');
-                if (stored) return stored;
-            } catch (e) {}
-            return null;
-        })();
-
-        backBtn.addEventListener('click', () => {
-            if (_sourceUrl) {
-                window.location.href = _sourceUrl;
-            } else if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/';
-            }
-        });
-
-        // ===== KEYBOARD SHORTCUTS =====
-        document.addEventListener('keydown', (e) => {
-            // Don't trigger when typing in search
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-            switch (e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    togglePlay();
-                    break;
-
-                case 'ArrowRight':
-                    e.preventDefault();
-                    video.currentTime = Math.min(video.currentTime + 5, video.duration);
-                    updateSeekBar();
-                    break;
-
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    video.currentTime = Math.max(video.currentTime - 5, 0);
-                    updateSeekBar();
-                    break;
-
-                case 'ArrowUp':
-                    e.preventDefault();
-                    setVolume(video.volume + 0.05);
-                    break;
-
-                case 'ArrowDown':
-                    e.preventDefault();
-                    setVolume(video.volume - 0.05);
-                    break;
-
-                case 'KeyM':
-                    e.preventDefault();
-                    if (video.volume > 0) {
-                        lastVolume = video.volume;
-                        setVolume(0);
-                    } else {
-                        setVolume(lastVolume);
-                    }
-                    break;
-
-                case 'KeyF':
-                    e.preventDefault();
-                    toggleFullscreen();
-                    break;
-            }
-        });
-
-        // ===== INIT =====
-        updateSeekBar();
-        updateVolumeBar();
-
-        // ===== PLAYER MODES =====
-        function setMode(mode) {
-            videoWrapper.classList.remove('mode-youtube', 'mode-tiktok');
-            video.style.display = 'none';
-            ytContainer.style.display = 'none';
-            ttContainer.style.display = 'none';
-            tiktokFallback.style.display = 'none';
-            if (mode === 'youtube') {
-                videoWrapper.classList.add('mode-youtube');
-                ytContainer.style.display = 'block';
-            } else if (mode === 'tiktok') {
-                videoWrapper.classList.add('mode-tiktok');
-                ttContainer.style.display = 'block';
-            } else if (mode === 'fallback') {
-                videoWrapper.classList.add('mode-tiktok');
-                tiktokFallback.style.display = 'flex';
-            }
-        }
-
-        function setMeta(m) {
-            const put = (id, text) => { document.getElementById(id).textContent = text || ''; };
-            put('metaCreator', m.creator);
-            put('metaViews', m.views != null && m.views !== '' ? `👁 ${formatStat(m.views)}` : '');
-            put('metaLikes', m.likes != null && m.likes !== '' ? `❤ ${formatStat(m.likes)}` : '');
-            put('metaComments', m.comments ? `💬 ${formatStat(m.comments)}` : '');
-            put('metaShares', m.shares ? `↗ ${formatStat(m.shares)}` : '');
-            put('metaDuration', m.duration ? `⏱ ${formatDuration(m.duration)}` : '');
-            put('metaDate', m.date ? `📅 ${new Date(m.date).toLocaleDateString()}` : '');
-        }
-
-        // ===== YOUTUBE PLAYER (IFrame API) =====
-        let ytPlayer = null;
-        let ytApiPromise = null;
-
-        function ensureYtApi() {
-            if (window.YT && window.YT.Player) return Promise.resolve();
-            if (!ytApiPromise) {
-                ytApiPromise = new Promise(resolve => {
-                    window.onYouTubeIframeAPIReady = resolve;
-                    const tag = document.createElement('script');
-                    tag.src = 'https://www.youtube.com/iframe_api';
-                    document.head.appendChild(tag);
-                });
-            }
-            return ytApiPromise;
-        }
-
-        async function loadYouTube(id) {
-            setMode('youtube');
-            videoTitle.textContent = 'Loading video...';
-            await ensureYtApi();
-            if (ytPlayer) { try { ytPlayer.destroy(); } catch (e) {} ytPlayer = null; }
-            ytContainer.innerHTML = '<div id="ytPlayerHost"></div>';
-            ytPlayer = new YT.Player('ytPlayerHost', {
-                videoId: id,
-                playerVars: { autoplay: 1, rel: 0 },
-                events: {
-                    // Auto-next when the YouTube video ends
-                    onStateChange: (e) => {
-                        if (e.data === YT.PlayerState.ENDED) playNext();
-                    }
-                }
-            });
-
-            // Real metadata via the existing YouTube Data API config
-            try {
-                const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${encodeURIComponent(id)}&key=${API_KEY}`);
-                const d = await r.json();
-                const item = d.items && d.items[0];
-                if (item) {
-                    videoTitle.textContent = item.snippet.title;
-                    setMeta({
-                        creator: item.snippet.channelTitle,
-                        views: item.statistics && item.statistics.viewCount,
-                        likes: item.statistics && item.statistics.likeCount,
-                        comments: item.statistics && item.statistics.commentCount,
-                        duration: parseISODuration(item.contentDetails && item.contentDetails.duration),
-                        date: item.snippet.publishedAt
-                    });
-                } else {
-                    videoTitle.textContent = 'Video unavailable';
-                }
-            } catch (e) {
-                console.error('YouTube metadata error:', e);
-            }
-        }
-
-        // ===== TIKTOK PLAYER (official embed iframe) =====
-        function showTikTokFallback(rec, watchUrl) {
-            setMode('fallback');
-            document.getElementById('fallbackThumb').src =
-                `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(rec.id)}`;
-            document.getElementById('watchOnTikTok').href = watchUrl || rec.video_url || '#';
-        }
-
-        async function loadTikTok(id) {
-            console.log('[Player] Loading TikTok video:', id);
-            videoTitle.textContent = 'Loading video...';
-            setMeta({});
-
-            // Single-video lookup by stable id (allowlist enforced server-side)
-            let rec = null;
-            try {
-                const r = await fetch(`${API_BASE}/tiktok-video?id=${encodeURIComponent(id)}`);
-                const d = await r.json();
-                console.log('[Player] Video API response:', d);
-                if (d && d.success) rec = d.video;
-            } catch (e) {
-                console.error('[Player] TikTok video lookup failed:', e);
-            }
-
-            if (!rec) {
-                console.warn('[Player] Video not found for id:', id);
-                videoTitle.textContent = 'Video not found';
-                setMode('fallback');
-                return;
-            }
-
-            videoTitle.textContent = rec.title || rec.description || 'TikTok Video';
-            setMeta({
-                creator: rec.username ? '@' + rec.username : '',
-                views: rec.views, likes: rec.likes, comments: rec.comments,
-                shares: rec.shares, duration: rec.duration, date: rec.createTime
-            });
-
-            // Use official TikTok embed iframe for reliable playback
-            const embedUrl = `https://www.tiktok.com/embed/v2/${encodeURIComponent(id)}`;
-            console.log('[Player] Loading TikTok embed:', embedUrl);
-            
-            ttContainer.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
-            setMode('tiktok');
-            
-            // Fallback if embed fails to load
-            setTimeout(() => {
-                const iframe = ttContainer.querySelector('iframe');
-                if (iframe && !iframe.contentDocument) {
-                    console.warn('[Player] Embed may have failed, showing fallback');
-                    showTikTokFallback(rec, rec.video_url);
-                }
-            }, 5000);
-        }
-
-        // ===== UP NEXT (dynamic, mixed, allowlisted) =====
-        let upNextItems = [];
-
-        function tiktokThumbSrc(v) {
-            const exp = String(v.thumbnail || '').match(/x-expires=(\d+)/);
-            const expired = exp && (+exp[1] * 1000) < Date.now();
-            return (v.thumbnail && !expired)
-                ? v.thumbnail
-                : `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(v.id)}`;
-        }
-
-        // Thumbnail for Up Next cards with enhanced fallback on error
-        function thumbImgHtml(src, videoId) {
-            const fallback1 = `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(videoId || '')}&retry=1`;
-            const fallback2 = `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(videoId || '')}`;
-            const placeholder = "data:image/svg+xml;utf8," + encodeURIComponent(
-                '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640">' +
-                '<rect width="100%" height="100%" fill="#161823"/>' +
-                '<text x="50%" y="50%" fill="#8a8b91" font-family="sans-serif" font-size="22" text-anchor="middle">TikTok Video</text>' +
-                '</svg>'
-            );
-            return `<img src="${src}" alt="thumbnail" loading="lazy" onerror="if(!this.dataset.fb1){this.dataset.fb1='1';this.src='${fallback1}'}else if(!this.dataset.fb2){this.dataset.fb2='1';this.src='${fallback2}'}else if(!this.dataset.fb3){this.dataset.fb3='1';this.src='${placeholder}'}">`;
-        }
-
-        async function loadUpNext() {
-            console.log('[Player] Loading Up Next recommendations...');
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            const items = [];
-
-            // TikTok picks: random sample from ONLY the three allowed
-            // accounts (server-side $sample + webVideoUrl allowlist)
-            try {
-                const exclude = type === 'tiktok' ? id : '';
-                const r = await fetch(`${API_BASE}/tiktok-upnext?limit=8&exclude=${encodeURIComponent(exclude)}`);
-                const d = await r.json();
-                console.log('[Player] Up Next TikTok response:', d.success, 'count:', d.videos ? d.videos.length : 0);
-                if (d && d.success && Array.isArray(d.videos)) {
-                    d.videos.forEach(v => items.push({
-                        type: 'tiktok',
-                        id: v.id,
-                        title: v.title || v.description || 'TikTok Video',
-                        creator: v.username ? '@' + v.username : '',
-                        thumb: tiktokThumbSrc(v),
-                        duration: v.duration,
-                        views: v.views || 0,
-                        likes: v.likes || 0,
-                        comments: v.comments || 0,
-                        shares: v.shares || 0
-                    }));
-                }
-            } catch (e) {
-                console.error('[Player] Up Next (TikTok) failed:', e);
-            }
-
-            // YouTube picks: 4 random ids from the allowed list, one
-            // batched API call; Shorts (<=60s) stay excluded
-            try {
-                const pool = YT_VIDEO_IDS.filter(x => !(type === 'youtube' && x === id));
-                const picks = shuffle(pool.slice()).slice(0, 4);
-                if (picks.length) {
-                    const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${picks.join(',')}&key=${API_KEY}`);
-                    const d = await r.json();
-                    console.log('[Player] Up Next YouTube response:', d.items ? d.items.length : 0, 'items');
-                    (d.items || []).forEach(item => {
-                        const secs = parseISODuration(item.contentDetails && item.contentDetails.duration);
-                        if (secs !== null && secs <= 60) return; // no Shorts
-                        const t = item.snippet.thumbnails;
-                        const stats = item.statistics || {};
-                        items.push({
-                            type: 'youtube',
-                            id: item.id,
-                            title: item.snippet.title,
-                            creator: item.snippet.channelTitle,
-                            thumb: (t.medium || t.high || t.default).url,
-                            duration: secs,
-                            views: Number(stats.viewCount) || 0,
-                            likes: Number(stats.likeCount) || 0,
-                            comments: Number(stats.commentCount) || 0,
-                            shares: 0
-                        });
-                    });
-                }
-            } catch (e) {
-                console.error('[Player] Up Next (YouTube) failed:', e);
-            }
-
-            upNextItems = shuffle(items);
-            console.log('[Player] Up Next total items:', upNextItems.length);
-            renderUpNext();
-        }
-
-        function renderUpNext() {
-            const container = document.getElementById('suggestedVideos');
-            container.innerHTML = '';
-            const currentId = urlParam('id').trim();
-        
-            upNextItems.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'suggested-card' + (item.id === currentId ? ' active-card' : '');
-                const badge = item.type === 'tiktok' ? 'tt' : 'yt';
-                const label = item.type === 'tiktok' ? 'TikTok' : 'YouTube';
-                const statsHtml = (item.views || item.likes)
-                    ? `<div class="suggested-stats">
-                        ${item.views ? `<span>\u{1F441} ${formatStat(item.views)}</span>` : ''}
-                        ${item.likes ? `<span>\u2764 ${formatStat(item.likes)}</span>` : ''}
-                       </div>`
-                    : '';
-                card.innerHTML = `
-                    <div class="suggested-thumb">
-                        ${thumbImgHtml(item.thumb, item.id)}
-                        <span class="suggested-type ${badge}">${label}</span>
-                    </div>
-                    <div class="suggested-info">
-                        <div class="suggested-title">${escapeHtml(item.title)}</div>
-                        <div class="suggested-duration">${escapeHtml(item.creator || '')}${item.duration ? ' \u00b7 ' + formatDuration(item.duration) : ''}</div>
-                        ${statsHtml}
-                    </div>
-                `;
-                // Same-page navigation: no full page reload
-                card.addEventListener('click', () => selectVideo(item.type, item.id, true));
-                container.appendChild(card);
-            });
-        }
-
-        // ===== SAME-PAGE VIDEO SWITCHING + HISTORY =====
-        function selectVideo(type, id, push) {
-            if (push) {
-                // One history entry per selected video (Back behaves normally)
-                history.pushState({ type, id }, '', `player.html?type=${type}&id=${encodeURIComponent(id)}`);
-            }
-            loadCurrentFromUrl();
-        }
-
-        function loadCurrentFromUrl() {
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            if (!id) {
-                setMode('fallback');
-                videoTitle.textContent = 'No video selected';
-                return;
-            }
-            if (type === 'youtube') loadYouTube(id);
-            else loadTikTok(id);
-            loadUpNext();
-            loadInteractionData();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        window.addEventListener('popstate', () => loadCurrentFromUrl());
-
-        // Auto-next when the current video ends (native TikTok 'ended'
-        // event already calls playNext(); YouTube uses onStateChange)
-        function playNext() {
-            const item = upNextItems.find(i => i.id !== urlParam('id').trim()) || upNextItems[0];
-            if (!item) { loadUpNext().then(() => { if (upNextItems[0]) selectVideo(upNextItems[0].type, upNextItems[0].id, true); }); return; }
-            selectVideo(item.type, item.id, true);
-        }
-
-        // ===== INITIAL LOAD =====
-        loadCurrentFromUrl();
-
-        // ===== LIKE SYSTEM =====
-        let currentVideoId = null;
-        let currentVideoType = 'tiktok';
-        let isUserLoggedIn = false;
-
-        async function checkAuthStatus() {
-            try {
-                const res = await fetch(`${API_BASE}/user`, { method: "GET", credentials: "include" });
-                isUserLoggedIn = res.status === 200;
-                return isUserLoggedIn;
-            } catch (error) {
-                console.error("Auth check failed:", error);
-                return false;
-            }
-        }
-
-        async function loadLikeStatus() {
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            currentVideoId = id;
-            currentVideoType = type;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(id)}/like?type=${type}`);
-                const data = await res.json();
-                
-                if (data.success) {
-                    document.getElementById('likeCount').textContent = formatStat(data.likeCount);
-                    
-                    const likeBtn = document.getElementById('likeBtn');
-                    const likeIcon = document.getElementById('likeIcon');
-                    
-                    if (data.userLiked) {
-                        likeBtn.classList.add('liked');
-                        likeIcon.classList.remove('fa-regular');
-                        likeIcon.classList.add('fa-solid');
-                    } else {
-                        likeBtn.classList.remove('liked');
-                        likeIcon.classList.remove('fa-solid');
-                        likeIcon.classList.add('fa-regular');
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to load like status:", error);
-            }
-        }
-
-        async function toggleLike() {
-            const isLoggedIn = await checkAuthStatus();
-            
-            if (!isLoggedIn) {
-                Toastify({
-                    text: "⚠️ Please login to like videos",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-                window.location.href = '/Codes/LogIn.html';
-                return;
-            }
-
-            const likeBtn = document.getElementById('likeBtn');
-            const isLiked = likeBtn.classList.contains('liked');
-            
-            try {
-                const method = isLiked ? 'DELETE' : 'POST';
-                const res = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(currentVideoId)}/like?type=${currentVideoType}`, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
-                
-                const data = await res.json();
-                
-                if (data.success) {
-                    document.getElementById('likeCount').textContent = formatStat(data.likeCount);
-                    
-                    const likeIcon = document.getElementById('likeIcon');
-                    if (data.userLiked) {
-                        likeBtn.classList.add('liked');
-                        likeIcon.classList.remove('fa-regular');
-                        likeIcon.classList.add('fa-solid');
-                    } else {
-                        likeBtn.classList.remove('liked');
-                        likeIcon.classList.remove('fa-solid');
-                        likeIcon.classList.add('fa-regular');
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to toggle like:", error);
-                Toastify({
-                    text: "❌ Failed to update like status",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-            }
-        }
-
-        document.getElementById('likeBtn').addEventListener('click', toggleLike);
-
-        // ===== COMMENTS SYSTEM =====
-        async function loadComments() {
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(id)}/comments?type=${type}`);
-                const data = await res.json();
-                
-                if (data.success) {
-                    renderComments(data.comments);
-                }
-            } catch (error) {
-                console.error("Failed to load comments:", error);
-            }
-        }
-
-        function renderComments(comments) {
-            const container = document.getElementById('commentsList');
-            container.innerHTML = '';
-            
-            if (comments.length === 0) {
-                container.innerHTML = '<p style="color: #888; text-align: center;">No comments yet. Be the first to comment!</p>';
-                return;
-            }
-            
-            comments.forEach(comment => {
-                const commentDiv = document.createElement('div');
-                commentDiv.className = 'comment-item';
-                
-                const avatarUrl = comment.user.image && comment.user.image !== 'default-user.png' 
-                    ? (comment.user.image.startsWith('http') ? comment.user.image : `/uploads/${comment.user.image}`)
-                    : '/Public/Images/default-user.png';
-                
-                const isOwn = comment.isOwn;
-                const deleteButton = isOwn ? `<button class="delete-comment-btn" onclick="deleteComment('${comment.id}')">Delete</button>` : '';
-                
-                commentDiv.innerHTML = `
-                    <div class="comment-header">
-                        <img src="${avatarUrl}" alt="User" class="comment-avatar">
-                        <span class="comment-user">${comment.user.firstname} ${comment.user.lastname}</span>
-                        <span class="comment-date">${new Date(comment.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <div class="comment-text">${escapeHtml(comment.text)}</div>
-                    ${deleteButton}
-                `;
-                
-                container.appendChild(commentDiv);
-            });
-        }
-
-        async function postComment() {
-            const isLoggedIn = await checkAuthStatus();
-            
-            if (!isLoggedIn) {
-                Toastify({
-                    text: "⚠️ Please login to post comments",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-                window.location.href = '/Codes/LogIn.html';
-                return;
-            }
-
-            const commentInput = document.getElementById('commentInput');
-            const text = commentInput.value.trim();
-            
-            if (!text) {
-                Toastify({
-                    text: "⚠️ Comment cannot be empty",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-                return;
-            }
-            
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(id)}/comments`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ text, type })
-                });
-                
-                const data = await res.json();
-                
-                if (data.success) {
-                    commentInput.value = '';
-                    loadComments(); // Reload comments to show new one
-                    Toastify({
-                        text: "✅ Comment posted successfully",
-                        duration: 3000,
-                        gravity: "top",
-                        position: "right",
-                        backgroundColor: "#4CAF50"
-                    }).showToast();
-                } else {
-                    Toastify({
-                        text: "❌ " + (data.error || "Failed to post comment"),
-                        duration: 3000,
-                        gravity: "top",
-                        position: "right",
-                        backgroundColor: "#ff6b6b"
-                    }).showToast();
-                }
-            } catch (error) {
-                console.error("Failed to post comment:", error);
-                Toastify({
-                    text: "❌ Failed to post comment",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-            }
-        }
-
-        async function deleteComment(commentId) {
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            
-            try {
-                const res = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(id)}/comments/${commentId}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-                
-                const data = await res.json();
-                
-                if (data.success) {
-                    loadComments(); // Reload comments
-                    Toastify({
-                        text: "✅ Comment deleted",
-                        duration: 3000,
-                        gravity: "top",
-                        position: "right",
-                        backgroundColor: "#4CAF50"
-                    }).showToast();
-                } else {
-                    Toastify({
-                        text: "❌ " + (data.error || "Failed to delete comment"),
-                        duration: 3000,
-                        gravity: "top",
-                        position: "right",
-                        backgroundColor: "#ff6b6b"
-                    }).showToast();
-                }
-            } catch (error) {
-                console.error("Failed to delete comment:", error);
-                Toastify({
-                    text: "❌ Failed to delete comment",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-            }
-        }
-
-        document.getElementById('postCommentBtn').addEventListener('click', postComment);
-
-        // ===== DOWNLOAD CONTROL =====
-        async function handleDownload() {
-            const isLoggedIn = await checkAuthStatus();
-            
-            if (!isLoggedIn) {
-                Toastify({
-                    text: "⚠️ Please login to download videos",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-                window.location.href = '/Codes/LogIn.html';
-                return;
-            }
-
-            const type = urlParam('type').toLowerCase();
-            const id = urlParam('id').trim();
-            
-            try {
-                window.location.href = `${API_BASE}/api/videos/${encodeURIComponent(id)}/download?type=${type}`;
-            } catch (error) {
-                console.error("Download failed:", error);
-                Toastify({
-                    text: "❌ Download failed",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "#ff6b6b"
-                }).showToast();
-            }
-        }
-
-        document.getElementById('downloadbtn').addEventListener('click', handleDownload);
-
-        // ===== LOAD INTERACTION DATA =====
-        function loadInteractionData() {
-            loadLikeStatus();
-            loadComments();
-        }
-
-        // ===== MOBILE MENU =====
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const sideMenu = document.getElementById('sideMenu');
-        const sideMenuOverlay = document.getElementById('sideMenuOverlay');
-        const sideMenuClose = document.getElementById('sideMenuClose');
-
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                sideMenu.style.display = 'flex';
-                sideMenuOverlay.style.display = 'block';
-                requestAnimationFrame(() => {
-                    sideMenu.classList.add('show');
-                    sideMenuOverlay.classList.add('show');
-                });
-            });
-        }
-
-        function closeSideMenu() {
-            sideMenu.classList.remove('show');
-            sideMenuOverlay.classList.remove('show');
-            setTimeout(() => {
-                sideMenu.style.display = 'none';
-                sideMenuOverlay.style.display = 'none';
-            }, 300);
-        }
-
-        if (sideMenuClose) sideMenuClose.addEventListener('click', closeSideMenu);
-        if (sideMenuOverlay) sideMenuOverlay.addEventListener('click', closeSideMenu);
-
-        // ===== MOBILE SEARCH =====
-        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
-        const mobileSearchArea = document.getElementById('mobileSearchArea');
-
-        if (mobileSearchBtn) {
-            mobileSearchBtn.addEventListener('click', () => {
-                if (mobileSearchArea.classList.contains('show')) {
-                    mobileSearchArea.classList.remove('show');
-                    setTimeout(() => { mobileSearchArea.style.display = 'none'; }, 300);
-                } else {
-                    mobileSearchArea.style.display = 'flex';
-                    requestAnimationFrame(() => {
-                        mobileSearchArea.classList.add('show');
-                    });
-                }
-            });
-        }
-
-        // ===== SEARCH =====
-        const searchboxes = document.querySelectorAll('.searchbox');
-        searchboxes.forEach(bar => {
-            bar.addEventListener('input', () => {
-                const query = bar.value.toLowerCase();
-                document.querySelectorAll('.suggested-card').forEach(card => {
-                    const title = card.querySelector('.suggested-title').textContent.toLowerCase();
-                    card.style.display = title.includes(query) ? 'flex' : 'none';
-                });
-            });
-        });
-
-        // ===== CONNECTION STATUS =====
-        const statusBar = document.getElementById('connectionStatus');
-
-        function updateConnectionStatus() {
-            if (navigator.onLine) {
-                statusBar.textContent = '🟢 Online';
-                statusBar.classList.remove('offline');
-                statusBar.classList.add('online');
-                statusBar.classList.remove('hide');
-                setTimeout(() => statusBar.classList.add('hide'), 2000);
-            } else {
-                statusBar.textContent = '🔴 Offline';
-                statusBar.classList.remove('online');
-                statusBar.classList.add('offline');
-                statusBar.classList.remove('hide');
-            }
-        }
-
-        window.addEventListener('online', updateConnectionStatus);
-        window.addEventListener('offline', updateConnectionStatus);
-        updateConnectionStatus();
-
-        // ===== LOADER =====
-        window.addEventListener('load', () => {
-            const loader = document.getElementById('loader');
-            loader.classList.add('hidden');
-            setTimeout(() => loader.remove(), 400);
-        });
-    </script>
-
-
-    <script src="/Codes/script.js"></script>
-
-
-</body>
-
-</html>
+
+
+            <!-- Section 2: Left Image, Right Text -->
+            <div class="legend-row reverse" data-category="homeLand">
+                <div class="legend-text scrollable-box">
+                    <h3>Homeland Kazakhstan</h3>
+                    <p>Omari.to is connected with the cultural identity and modern digital spirit associated with
+                        Kazakhstan, one of the largest and most historically rich countries in Central Asia. Kazakhstan
+                        is known for its beautiful landscapes, deep traditions, modern cities, and rapidly growing
+                        connection with technology, media, and international digital culture. As a country that bridges
+                        Asia and Europe, Kazakhstan has become a place where traditional heritage and modern creativity
+                        exist together, inspiring many young creators and online personalities.
+
+                        Kazakhstan is famous for its vast steppes, mountains, natural beauty, and multicultural society.
+                        The country is home to people from many different ethnic and cultural backgrounds, creating a
+                        diverse environment that influences art, entertainment, and social media culture. Cities such as
+                        Almaty and Astana (Nur-Sultan) are recognized for their modern architecture, growing technology
+                        sectors, and active youth communities who are increasingly involved in digital media and online
+                        content creation.
+
+                        For creators connected with Kazakhstan, social media platforms like TikTok provide opportunities
+                        to share culture, creativity, and entertainment with global audiences. Omari.to reflects this
+                        new generation of digital creators who use modern platforms to connect with people around the
+                        world while representing creativity inspired by their background and experiences. Through
+                        short-form videos, online entertainment, and creative media content, the platform demonstrates
+                        how digital creators from Central Asia are becoming part of the international online
+                        entertainment industry.
+                    </p>
+                    <p>Kazakhstan itself has a long and fascinating history. It was historically an important part of
+                        the Silk Road, connecting trade, culture, and communication between East and West for centuries.
+                        Today, the country continues to grow in technology, education, and media, with younger
+                        generations becoming increasingly active on international social platforms. This modern digital
+                        growth has allowed creators and influencers from Kazakhstan to gain recognition far beyond their
+                        local audiences.
+
+                        The culture of Kazakhstan values hospitality, family connections, respect, and community —
+                        qualities that are often reflected in the positive and engaging nature of many creators
+                        associated with the region. Music, storytelling, fashion, and entertainment are important parts
+                        of Kazakh culture, and modern creators combine these traditions with global internet trends to
+                        create unique online identities.
+
+                        Omari.to represents the influence of this evolving digital culture, where creativity,
+                        entertainment, and social interaction come together in a modern online environment. The platform
+                        highlights how creators connected to Kazakhstan can participate in global social media trends
+                        while still carrying inspiration from their homeland, culture, and regional identity. As social
+                        media continues to grow worldwide, creators linked with Kazakhstan contribute to showing the
+                        world a modern and creative image of Central Asian digital culture.
+
+                        Kazakhstan’s growing internet access, young population, and expanding social media presence have
+                        created opportunities for many digital creators to build audiences online. Platforms like TikTok
+                        have made it possible for creators such as Omari.to to share entertainment, creativity, and
+                        online experiences with viewers across different countries and cultures. This combination of
+                        local identity and global digital reach represents the future of modern online media and creator
+                        communities.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/Kazakhstan.png" alt="Global Connections">
+                </div>
+            </div>
+
+            <!-- Section 1: Right Image, Left Text -->
+            <div class="legend-row" data-category="city">
+                <div class="legend-text scrollable-box">
+                    <h3>Almaty, Kazakhstan</h3>
+                    <p>Almaty is one of the most famous and culturally important cities in Kazakhstan. Located in the
+                        southeastern part of the country near the beautiful Tian Shan mountains, Almaty is widely known
+                        for its natural scenery, modern lifestyle, rich history, and strong connection to education,
+                        culture, tourism, and business. Before Astana became the capital city, Almaty served as the
+                        capital of Kazakhstan for many years and remains one of the country’s largest and most
+                        influential cities.
+
+                        The city is famous for its combination of modern urban life and breathtaking natural beauty.
+                        Snow-covered mountains surround Almaty, creating a unique environment where people can
+                        experience both a busy city atmosphere and peaceful nature at the same time. Many visitors
+                        recognize Almaty for its green streets, parks, mountain views, and clean environment. During
+                        winter, nearby ski resorts attract tourists and athletes, while summer brings hiking,
+                        sightseeing, and outdoor activities in the surrounding mountains and lakes.
+
+                        Almaty is considered the cultural heart of Kazakhstan. The city contains museums, theaters, art
+                        galleries, universities, music venues, and historical landmarks that reflect both traditional
+                        Kazakh culture and modern international influence. Young people in Almaty are highly active in
+                        technology, fashion, media, and digital entertainment, making the city an important center for
+                        social media creators, influencers, and modern online culture in Central Asia.
+
+                        One of the most recognizable places in Almaty is the Medeu skating rink and the Shymbulak ski
+                        resort, both located in the mountains near the city. These locations are internationally known
+                        and attract visitors from around the world. Almaty is also famous for Kok Tobe Hill, a popular
+                        tourist attraction that offers panoramic views of the city and includes entertainment areas,
+                        restaurants, and cultural attractions.
+
+                    </p>
+                    <p>The city’s economy is one of the strongest in Kazakhstan, with development in finance,
+                        technology, education, tourism, and business sectors. Because of this growth, Almaty has become
+                        a modern urban center with shopping malls, cafes, international restaurants, creative studios,
+                        and digital startups. The city’s lifestyle combines traditional Kazakh hospitality with modern
+                        global culture, creating a unique and energetic atmosphere.
+
+                        Almaty also plays a major role in Kazakhstan’s growing digital and social media scene. Many
+                        young creators, artists, and influencers from the city use platforms like TikTok, Instagram, and
+                        YouTube to share content with international audiences. The creative environment of Almaty
+                        encourages innovation, entertainment, and modern storytelling, helping local creators become
+                        part of the global online community.
+
+                        The people of Almaty are known for their hospitality, cultural pride, and appreciation for both
+                        tradition and modern progress. Festivals, music events, food culture, and public gatherings are
+                        important parts of life in the city. Traditional Kazakh foods, combined with international
+                        cuisine, make Almaty one of the most diverse food destinations in the region.
+
+                        With its beautiful landscapes, modern development, rich cultural identity, and growing influence
+                        in digital media and entertainment, Almaty represents the modern face of Kazakhstan. It is a
+                        city where history, creativity, nature, and technology come together, making it one of the most
+                        unique and important cities in Central Asia.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="../Public/Images/Kazakhstan-Almaty.png" alt="World Travel">
+                </div>
+            </div>
+
+
+            <!-- Section 2: Left Image, Right Text -->
+            <div class="legend-row reverse" data-category="culture">
+                <div class="legend-text scrollable-box">
+                    <h3>Kazakhstan Culture</h3>
+                    <p>The culture of Kazakhstan is one of the richest and most diverse in Central Asia, shaped by
+                        centuries of history, nomadic traditions, hospitality, music, art, and modern development.
+                        Located between Europe and Asia, Kazakhstan has been influenced by many civilizations throughout
+                        history, creating a unique cultural identity that combines ancient traditions with modern
+                        lifestyles. The people of Kazakhstan are known for their warmth, respect for family, strong
+                        community values, and deep pride in their national heritage.
+
+                        Historically, Kazakh culture developed from the traditions of nomadic tribes who traveled across
+                        the vast steppes of Central Asia. These nomadic roots remain an important part of the country’s
+                        identity even today. Horses played a major role in traditional Kazakh life, symbolizing freedom,
+                        strength, and survival across the open grasslands. Traditional yurts, portable round tents used
+                        by nomads, are still recognized as an important cultural symbol of Kazakhstan and represent the
+                        country’s connection to its historical way of life.
+
+                        Hospitality is one of the most respected values in Kazakh culture. Guests are treated with great
+                        honor, and welcoming visitors with food, tea, and kindness is considered an important tradition.
+                        Family relationships and respect for elders are central parts of daily life, and many cultural
+                        customs are based on unity, loyalty, and social respect within communities.
+
+                        Kazakhstan is also famous for its traditional music and instruments. One of the most iconic
+                        instruments is the dombra, a two-stringed musical instrument that has been part of Kazakh
+                        culture for centuries. Traditional music often tells stories about history, heroism, nature, and
+                        the lives of nomadic people. Music and storytelling remain important parts of celebrations,
+                        festivals, and cultural events across the country.
+                    </p>
+                    <p>Kazakh cuisine reflects the country’s nomadic history and multicultural influences. Traditional
+                        foods such as beshbarmak, kazy, and various dairy products are popular throughout the country.
+                        Tea culture is also extremely important, and tea is commonly served during family gatherings and
+                        social meetings as a symbol of hospitality and friendship.
+
+                        Modern Kazakhstan combines these traditional values with rapid urban development and
+                        international influence. Cities like Almaty and Astana feature modern architecture, technology,
+                        fashion, entertainment, and growing digital industries while still preserving cultural heritage
+                        and traditions. Young people in Kazakhstan are increasingly active in music, sports, social
+                        media, film production, and digital content creation, helping the country become more visible
+                        internationally.
+
+                        Festivals and national celebrations are another major part of Kazakh culture. One of the most
+                        important celebrations is Nauryz, the traditional New Year festival celebrated in spring. Nauryz
+                        represents renewal, unity, peace, and new beginnings, bringing families and communities together
+                        through music, food, cultural performances, and traditional activities.
+
+                        Kazakhstan’s culture also reflects its multicultural society. Many ethnic groups and communities
+                        live together in the country, contributing to a diverse environment where different languages,
+                        traditions, and customs coexist peacefully. This diversity has helped shape Kazakhstan into a
+                        modern nation that values both tradition and international cooperation.
+
+                        Today, Kazakhstan continues to grow as a center of culture, tourism, education, and digital
+                        creativity in Central Asia. Through art, music, social media, entertainment, and modern
+                        technology, the younger generation is introducing Kazakh culture to global audiences while still
+                        preserving the traditions and history that make the country unique.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="https://marakandatravel.asia/wp-content/uploads/2021/02/w1500_37910821.jpg"
+                        alt="Global Connections">
+                </div>
+            </div>
+
+            <!-- Section 1: Right Image, Left Text -->
+            <div class="legend-row" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Travel Journey Across the World</h3>
+                    <p>Traveling across countries like Qatar, Indonesia, China, Azerbaijan, Kyrgyzstan, Turkey,
+                        Tajikistan, Dubai (UAE), Uzbekistan, and Kazakhstan represents an unforgettable journey through
+                        some of the world's most diverse cultures, landscapes, traditions, and modern cities. These
+                        countries together create a unique blend of ancient history, modern architecture, natural
+                        beauty, and rich cultural heritage stretching from the Middle East to Central and East Asia.
+                        From futuristic skylines and luxury city life to mountains, deserts, lakes, historical mosques,
+                        and traditional markets, each destination offers a completely different experience while still
+                        sharing strong cultural values of hospitality, family, and tradition.
+
+                        This travel experience takes visitors through some of the fastest-growing modern cities in the
+                        world, such as Dubai, Doha, Shanghai, Istanbul, and Almaty, while also exploring peaceful
+                        mountain regions, historical Silk Road cities, and beautiful natural landscapes found in
+                        Kyrgyzstan, Tajikistan, and Uzbekistan. The journey highlights the contrast between traditional
+                        lifestyles and modern development, showing how different cultures preserve their heritage while
+                        embracing technology, tourism, and global influence.</p>
+                    <p>Throughout these countries, travelers can experience unique foods, languages, clothing styles,
+                        architecture, festivals, and local customs. Whether exploring the deserts of Qatar and Dubai,
+                        the tropical islands of Indonesia, the historical streets of Turkey and Uzbekistan, or the snowy
+                        mountains of Kazakhstan and Kyrgyzstan, every destination contributes to a larger story of
+                        cultural diversity and international connection. Together, these countries represent a powerful
+                        mix of tradition, adventure, creativity, tourism, and modern civilization.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/World.png" alt="World Travel">
+                </div>
+            </div>
+
+            <div class="legend-row reverse" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>South Korea</h3>
+                    <p>South Korea, officially known as the Republic of Korea (ROK), is one of the world's most
+                        technologically advanced and culturally influential countries. Located in East Asia on the
+                        southern half of the Korean Peninsula, South Korea is bordered by the Yellow Sea, the East Sea
+                        (Sea of Japan), and North Korea. Over the past few decades, the country has transformed from a
+                        developing nation into one of the world's leading economies, becoming internationally recognized
+                        for its innovation, education, entertainment, and modern infrastructure. Cities such as Seoul,
+                        Busan, Incheon, and Daegu showcase impressive skylines, smart transportation systems, and
+                        vibrant urban lifestyles that attract millions of visitors every year.
+
+                        South Korea is a country where centuries-old traditions exist alongside cutting-edge technology.
+                        Ancient palaces, Buddhist temples, traditional hanok villages, and historic fortresses stand
+                        beautifully beside futuristic skyscrapers and digital smart cities. Seoul, the capital city,
+                        perfectly represents this harmony by combining landmarks such as Gyeongbokgung Palace and
+                        Bukchon Hanok Village with modern attractions like Lotte World Tower, Dongdaemun Design Plaza,
+                        and the famous N Seoul Tower. This unique blend of history and innovation makes South Korea one
+                        of the most fascinating travel destinations in the world.
+
+                        The country has become a global cultural powerhouse through the worldwide popularity of K-pop,
+                        K-dramas, Korean cinema, fashion, and beauty products. Entertainment companies have introduced
+                        Korean music and television to international audiences, while award-winning films and television
+                        series have further strengthened South Korea's influence across the globe. Korean fashion,
+                        skincare, gaming, and digital content continue inspiring millions of people, making the country
+                        one of the leading creative industries in Asia.
+
+                        South Korean culture places strong importance on respect, family values, education, discipline,
+                        and hospitality. Traditional customs remain deeply respected despite rapid modernization.
+                        Visitors can experience colorful cultural festivals, tea ceremonies, traditional clothing known
+                        as Hanbok, and authentic Korean cuisine. Famous dishes such as Kimchi, Bibimbap, Bulgogi,
+                        Tteokbokki, Samgyeopsal, and Korean barbecue have become internationally loved and represent the
+                        country's rich culinary heritage. Food markets, street vendors, and modern restaurants together
+                        create an unforgettable dining experience.</p>
+                    <p>South Korea is also recognized as one of the world's leaders in technology, electronics,
+                        automotive manufacturing, robotics, artificial intelligence, and high-speed internet. Global
+                        companies such as Samsung, LG, Hyundai, Kia, and SK Group have helped establish the country's
+                        reputation for innovation and engineering excellence. High-speed trains, efficient public
+                        transportation, smart cities, and advanced digital infrastructure make South Korea one of the
+                        most connected and technologically advanced nations on Earth.
+
+                        Nature is another remarkable aspect of South Korea. Beyond its modern cities, the country offers
+                        beautiful mountains, forests, rivers, beaches, and national parks. Destinations such as Jeju
+                        Island, Seoraksan National Park, Nami Island, and Busan's coastline provide breathtaking scenery
+                        throughout the year. Cherry blossom festivals in spring, green mountains during summer, colorful
+                        autumn forests, and snowy winter landscapes make South Korea an attractive destination in every
+                        season.
+
+                        Today, South Korea stands as a symbol of innovation, resilience, creativity, and global
+                        influence. Its ability to preserve centuries-old traditions while embracing futuristic
+                        technology has made it one of the world's most admired countries. Whether visitors are
+                        interested in history, technology, fashion, entertainment, food, or natural beauty, South Korea
+                        offers a unique experience that combines modern luxury with rich cultural heritage, making it
+                        one of the premier destinations in Asia.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/South-Korea.png" alt="World Travel">
+                </div>
+            </div>
+
+
+            <!-- Section 2: Left Image, Right Text -->
+            <div class="legend-row" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Qatar</h3>
+                    <p>Qatar is one of the most advanced and rapidly developing countries in the Middle East, widely
+                        recognized for its luxury lifestyle, economic strength, and futuristic architecture. Located on
+                        the Arabian Gulf, Qatar has transformed itself from a traditional desert nation into a modern
+                        global center for business, tourism, sports, and international media. The capital city, Doha, is
+                        famous for its modern skyline, cultural attractions, luxury shopping malls, and world-class
+                        infrastructure. Massive skyscrapers, beautiful waterfronts, and modern transportation systems
+                        represent the country's fast-paced development and international influence.
+
+                        Despite its modernization, Qatar continues to preserve its Arab traditions, Islamic heritage,
+                        and cultural identity. Traditional souqs, historical buildings, local cuisine, and cultural
+                        festivals remain important parts of daily life. Hospitality is highly valued in Qatari culture,
+                        and visitors often experience warmth and generosity from local communities. Traditional coffee,
+                        dates, and family gatherings are central elements of social culture in the country.
+
+                        Tourism in Qatar has grown significantly in recent years due to international events, modern
+                        attractions, and luxury experiences. Visitors enjoy desert safaris, camel riding, cultural
+                        museums, and beautiful beaches along the Gulf coast. The country is also home to famous
+                        landmarks such as the Museum of Islamic Art, Katara Cultural Village, and the Pearl-Qatar. These
+                        places highlight both the artistic and modern sides of the nation.
+
+
+                    </p>
+                    <p>Qatar is also internationally known for its global media influence, especially through Al
+                        Jazeera, one of the world's most recognized news networks. In addition, the country gained
+                        worldwide attention by hosting the FIFA World Cup 2022, showcasing its stadiums, infrastructure,
+                        and ability to organize major international events. Sports, tourism, and international business
+                        have become major parts of Qatar's global identity.
+
+                        Today, Qatar represents a balance between tradition and innovation. While preserving Islamic and
+                        Arab values, the country continues investing in education, technology, tourism, and sustainable
+                        development. This combination of cultural heritage and futuristic vision makes Qatar one of the
+                        most unique and influential countries in the Middle East.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/Qatar.png" alt="Global Connections">
+                </div>
+            </div>
+
+            <!-- Section 3: Right Image, Left Text -->
+            <div class="legend-row reverse" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Indonesia</h3>
+                    <p>Indonesia is one of the world’s most diverse and naturally beautiful countries, made up of more
+                        than 17,000 islands spread across Southeast Asia. The country is famous for its tropical
+                        climate, beaches, volcanoes, rainforests, and deep cultural traditions. Indonesia is home to
+                        hundreds of ethnic groups and languages, creating one of the richest cultural landscapes in the
+                        world. From the busy capital city of Jakarta to the peaceful island of Bali, Indonesia offers an
+                        incredible variety of experiences for travelers and explorers.
+
+                        The natural beauty of Indonesia is one of its greatest attractions. The country contains
+                        stunning beaches, coral reefs, waterfalls, active volcanoes, and tropical jungles filled with
+                        wildlife. Destinations such as Bali, Lombok, Komodo Island, and Raja Ampat attract millions of
+                        tourists every year. Indonesia’s landscapes provide opportunities for surfing, diving, hiking,
+                        island exploration, and eco-tourism.</p>
+                    <p>Indonesia’s culture is strongly connected to history, spirituality, and traditional arts.
+                        Ancient temples such as Borobudur and Prambanan reflect centuries of religious and cultural
+                        heritage. Traditional dances, music performances, handcrafted art, and local festivals continue
+                        to play an important role in Indonesian society. Family values and hospitality are deeply
+                        respected, and visitors often experience friendly and welcoming communities.
+
+                        Food is another major part of Indonesian culture. The country is famous for flavorful dishes
+                        such as nasi goreng, satay, rendang, and traditional seafood cuisine. Every region has its own
+                        cooking styles and ingredients influenced by local traditions and geography. Indonesian street
+                        food and traditional markets provide unique culinary experiences for visitors.
+
+                        In modern times, Indonesia continues growing as an important center for tourism, business,
+                        technology, and digital media in Southeast Asia. Young creators, entrepreneurs, and artists are
+                        helping shape a modern Indonesian identity while preserving traditional culture. The combination
+                        of natural beauty, ancient history, modern development, and cultural diversity makes Indonesia
+                        one of the most fascinating countries in the world.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/Indonesia.png" alt="Wow Moments">
+                </div>
+            </div>
+
+            <!-- Section 4: Left Image, Right Text -->
+            <div class="legend-row" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>China</h3>
+                    <p>China is one of the oldest civilizations in human history and one of the most powerful and
+                        influential countries in the modern world. With thousands of years of history, China has
+                        contributed greatly to science, technology, philosophy, architecture, literature, and global
+                        culture. Today, the country is recognized for its massive cities, economic strength,
+                        technological innovation, and rich cultural heritage. China’s blend of ancient traditions and
+                        futuristic development creates one of the most unique identities among nations.
+
+                        The country is home to many famous historical landmarks, including the Great Wall of China, the
+                        Forbidden City, the Terracotta Army, and ancient temples that attract millions of visitors every
+                        year. These monuments reflect China’s long imperial history and cultural achievements.
+                        Traditional Chinese culture, including calligraphy, martial arts, traditional medicine, and
+                        festivals, continues to influence societies worldwide.
+                    </p>
+                    <p>Modern China is known for its advanced infrastructure, modern transportation systems, and
+                        rapidly growing technology industry. Cities like Beijing, Shanghai, Shenzhen, and Guangzhou are
+                        global centers for finance, innovation, and digital development. High-speed trains, futuristic
+                        skyscrapers, and smart-city technology represent the country’s commitment to modernization and
+                        economic progress.
+
+                        Chinese cuisine is one of the most famous in the world, with regional styles such as Sichuan,
+                        Cantonese, and Beijing cuisine offering unique flavors and traditions. Food culture is deeply
+                        connected to Chinese family life and celebrations. Tea culture, traditional festivals like
+                        Chinese New Year, and respect for family and elders remain important parts of society.
+
+                        China also plays a major role in global politics, trade, tourism, and technology. Its influence
+                        can be seen across industries such as manufacturing, artificial intelligence, entertainment, and
+                        digital media. As one of the world’s leading nations, China continues balancing its ancient
+                        cultural heritage with modern innovation and international influence.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/China.png" alt="Behind Scenes">
+                </div>
+            </div>
+
+            <!-- Section 5: Right Image, Left Text -->
+            <div class="legend-row reverse" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Azerbaijan</h3>
+                    <p>Azerbaijan is a beautiful country located between Eastern Europe and Western Asia, known for its
+                        rich history, natural beauty, and modern development. Often called the “Land of Fire,”
+                        Azerbaijan has a deep connection to ancient fire worship traditions due to its natural gas
+                        reserves and burning mountain landscapes. The country combines Turkic, Persian, Islamic, and
+                        Caucasian cultural influences, creating a unique national identity and heritage.
+
+                        The capital city, Baku, is one of the most modern cities in the region and is famous for its
+                        futuristic architecture, luxury buildings, and Caspian Sea coastline. At the same time, Baku
+                        preserves historical areas such as the Old City, where visitors can explore ancient streets,
+                        mosques, palaces, and traditional markets. The contrast between historical architecture and
+                        modern skyscrapers makes the city visually unique.
+                    </p>
+                    <p>Azerbaijan is also known for its beautiful natural landscapes, including mountains, forests,
+                        lakes, and coastal regions. The Caucasus Mountains provide stunning scenery and opportunities
+                        for hiking and tourism. Rural villages preserve traditional lifestyles, hospitality, and local
+                        customs that have existed for generations.
+
+                        Music and art are important parts of Azerbaijani culture. Traditional mugham music, carpets, and
+                        folk dances represent centuries of artistic tradition. Azerbaijani cuisine is rich in flavor and
+                        includes dishes such as plov, kebabs, dolma, and traditional sweets. Tea culture is also highly
+                        important in social gatherings and hospitality.
+
+                        Today, Azerbaijan continues developing as a center for tourism, energy, and international
+                        business while preserving its cultural traditions and historical identity. The country
+                        represents a powerful combination of modern progress, natural beauty, and historical richness in
+                        the Caucasus region.</p>
+                </div>
+                <div class="legend-image">
+                    <img src="https://i.ytimg.com/vi/Gx0Gu9MoLUE/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDkJGi6kgLHmRFoHQG2AOBpuxEgVw"
+                        alt="Chef Food">
+                </div>
+            </div>
+
+            <!-- Section 6: Left Image, Right Text -->
+            <div class="legend-row" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Kyrgyzstan</h3>
+                    <p>Kyrgyzstan is one of the most naturally breathtaking countries in Central Asia, famous for its
+                        massive mountain ranges, crystal-clear lakes, green valleys, and deeply rooted nomadic
+                        traditions. Surrounded by the Tian Shan mountains, the country offers some of the most stunning
+                        natural scenery in the region. Travelers visiting Kyrgyzstan often experience peaceful
+                        landscapes filled with snow-covered peaks, rivers, alpine meadows, and traditional villages that
+                        preserve centuries-old cultural traditions. The country’s untouched beauty and fresh mountain
+                        environment make it a paradise for nature lovers and adventure travelers.
+
+                        The nomadic heritage of Kyrgyzstan remains a very important part of national identity and
+                        culture. For centuries, Kyrgyz people lived as nomads, moving across the mountains and
+                        grasslands with horses and livestock. Even today, traditional yurts, horseback riding, eagle
+                        hunting, and seasonal migrations continue in rural areas. Horses are highly respected in Kyrgyz
+                        culture and symbolize freedom, strength, and connection with nature. Visitors often experience
+                        authentic cultural activities such as staying in yurts, riding horses through mountain valleys,
+                        and participating in traditional festivals.
+                    </p>
+                    <p> Kyrgyzstan is also known for its beautiful lakes, especially Issyk-Kul Lake, one of the largest
+                        mountain lakes in the world. The lake attracts tourists from across Central Asia because of its
+                        clear blue water, mountain scenery, and relaxing atmosphere. During summer, visitors enjoy
+                        beaches, boating, hiking, and exploring nearby villages. The country’s landscapes are ideal for
+                        outdoor sports such as trekking, camping, skiing, and mountaineering.
+
+                        The culture of Kyrgyzstan reflects strong values of hospitality, family, and respect for
+                        tradition. Guests are warmly welcomed with traditional foods, tea, and local customs. Kyrgyz
+                        music, storytelling, and handcrafted art are important parts of cultural life. Traditional foods
+                        such as beshbarmak and local dairy products reflect the country’s nomadic roots and mountain
+                        lifestyle.
+
+                        Today, Kyrgyzstan continues growing as an important destination for eco-tourism and cultural
+                        exploration. While modern cities such as Bishkek develop with technology and business, much of
+                        the country still preserves its natural beauty and traditional way of life. Kyrgyzstan
+                        represents a powerful connection between nature, history, and authentic Central Asian culture.
+                    </p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/Kyrgyztan.png" alt="Culture Food">
+                </div>
+            </div>
+
+
+            <div class="legend-row reverse" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Turkey</h3>
+                    <p>Turkey is one of the world’s most historically rich and culturally diverse countries, located at
+                        the crossroads of Europe and Asia. Because of its unique geographical position, Turkey has been
+                        influenced by many civilizations throughout history, including the Byzantine, Roman, Seljuk, and
+                        Ottoman Empires. This historical background has created a country filled with magnificent
+                        architecture, ancient landmarks, vibrant traditions, and modern cities that attract millions of
+                        tourists every year.
+                        The city of Istanbul is one of Turkey’s most famous destinations and is the only major city in
+                        the world located on two continents. Istanbul is known for its grand mosques, historical
+                        palaces, bustling bazaars, and modern lifestyle. Landmarks such as Hagia Sophia, the Blue
+                        Mosque, Topkapi Palace, and the Grand Bazaar represent centuries of history and cultural
+                        influence. The city combines Islamic heritage, European architecture, and modern urban
+                        development in a truly unique way.
+                    </p>
+                    <p>Turkey is also famous for its natural beauty and tourism destinations. Cappadocia attracts
+                        visitors with its unique rock formations and hot air balloons, while coastal regions such as
+                        Antalya and Bodrum are known for beaches, resorts, and Mediterranean scenery. Mountains,
+                        forests, rivers, and historical ruins across the country make Turkey one of the most diverse
+                        travel destinations in the world.
+
+                        Turkish culture is deeply connected to hospitality, family values, art, and cuisine. Turkish
+                        food is internationally famous for dishes such as kebabs, baklava, pide, and traditional tea
+                        culture. Music, folk dances, carpets, and handicrafts remain important parts of cultural life.
+                        Turkish traditions reflect a combination of Central Asian roots, Islamic values, and
+                        Mediterranean influence.
+
+                        Modern Turkey plays a major role in tourism, international trade, fashion, entertainment, and
+                        media. While preserving its historical identity and traditions, the country continues developing
+                        modern infrastructure, technology, and global connections. Turkey represents a powerful blend of
+                        ancient civilization, cultural richness, and modern international influence.
+                    </p>
+                </div>
+                <div class="legend-image">
+                    <img src="/Public/Images/Turkey.png" alt="Culture Food">
+                </div>
+            </div>
+
+            <div class="legend-row" data-category="travel">
+                <div class="legend-text scrollable-box">
+                    <h3>Tajikistan</h3>
+                    <p>Tajikistan is a mountainous country in Central Asia known for its dramatic natural beauty,
+                        ancient history, and strong cultural traditions. More than 90 percent of the country is covered
+                        by mountains, making it one of the most scenic destinations in the region. Travelers visiting
+                        Tajikistan experience high-altitude roads, peaceful valleys, rivers, glaciers, and breathtaking
+                        mountain landscapes that remain largely untouched by modern urbanization.
+
+                        The Pamir Mountains, often called the “Roof of the World,” are one of Tajikistan’s most famous
+                        natural attractions. These mountains attract adventurers, hikers, and photographers from around
+                        the world. The Pamir Highway, one of the highest roads on Earth, offers unforgettable views of
+                        valleys, lakes, and remote villages. Tajikistan’s natural environment makes it ideal for
+                        adventure tourism, trekking, camping, and exploration.
+                    </p>
+                    <p>Tajik culture is strongly influenced by Persian heritage, language, and historical traditions.
+                        Hospitality and respect for guests are highly valued in society, and visitors often experience
+                        warm and welcoming communities. Traditional music, dance, poetry, and handcrafted textiles are
+                        important cultural elements that reflect centuries of Central Asian and Persian influence.
+
+                        The country also has a rich Silk Road history, connecting it to ancient trade routes between
+                        Asia and the Middle East. Historical sites, old fortresses, and cultural landmarks show
+                        Tajikistan’s historical importance in regional trade and civilization. Rural villages continue
+                        preserving traditional lifestyles, clothing, and customs passed down through generations.
+
+                        Although Tajikistan is still developing economically, the country is becoming increasingly
+                        rec

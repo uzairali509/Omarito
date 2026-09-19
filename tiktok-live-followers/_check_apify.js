@@ -15,6 +15,7 @@ async function main() {
             data.data.items.forEach(act => {
                 console.log(`  - ${act.name} (id: ${act.id})`);
             });
+            
         }
     } catch (e) {
         console.log("Actors list error:", e.message);

@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --primary: #d4bf86;
     --secondary: #dcc78e;
     --dark: #0f0f0f;
@@ -266,6 +266,204 @@ a {
 
 
 
+/* ===== NOTIFICATION BELL & PANEL ===== */
+.nav-notification-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: color 0.3s, transform 0.3s;
+    border-radius: 50%;
+}
+
+.notification-btn:hover {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.notification-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    background: #ff3b3b;
+    color: white;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 0 0 2px var(--dark);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.notification-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 360px;
+    max-width: 90vw;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(212, 191, 134, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 191, 134, 0.1);
+    backdrop-filter: blur(20px);
+    z-index: 2000;
+    overflow: hidden;
+    animation: slideDown 0.25s ease-out;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notification-header h3 {
+    margin: 0;
+    font-family: "Playfair Display", serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: 1px;
+}
+
+.see-all-link {
+    font-size: 12px;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.see-all-link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.notification-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    margin-bottom: 8px;
+    transition: background 0.2s, transform 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.notification-item:hover {
+    background: rgba(212, 191, 134, 0.1);
+    transform: translateX(4px);
+}
+
+.notification-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--primary);
+    background: var(--dark);
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+}
+
+.notification-title .creator {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.notification-title .platform {
+    background: rgba(212, 191, 134, 0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 6px;
+}
+
+.notification-desc {
+    font-size: 12px;
+    color: #aaa;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-time {
+    font-size: 11px;
+    color: #777;
+    font-weight: 400;
+}
+
+.notification-empty {
+    padding: 30px 20px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .notification-panel {
+        width: calc(100vw - 40px);
+        right: -20px;
+    }
+    
+    .nav-notification-toggle {
+        margin-left: 10px;
+    }
+}
 /* ===== HERO SECTION ===== */
 
 .hero {
@@ -1378,12 +1576,12 @@ select {
     transition: background 0.4s ease, transform 0.3s ease, opacity 0.4s ease;
 }
 
-/* ✅ Online = Green (Correct) */
+/* âœ… Online = Green (Correct) */
 #connectionStatus.online {
     background: linear-gradient(90deg, #28a745, #45c76d);
 }
 
-/* ✅ Offline = Red (Correct) */
+/* âœ… Offline = Red (Correct) */
 #connectionStatus.offline {
     background: linear-gradient(90deg, #d9534f, #ff6b6b);
 }
@@ -1665,7 +1863,7 @@ select {
     background: rgba(255, 255, 255, 0.06);
 }
 
-/* 🔥 RECTANGULAR Profile Image */
+/* ðŸ”¥ RECTANGULAR Profile Image */
 .profile-img-box {
     position: relative;
     width: 100%;
@@ -1781,7 +1979,7 @@ select {
     background: rgba(0, 0, 0, 0.9);
     backdrop-filter: blur(15px);
     z-index: 9998;
-    /* ✅ Cursor se pehle rakha hai ab */
+    /* âœ… Cursor se pehle rakha hai ab */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1805,9 +2003,9 @@ select {
     color: white;
     font-size: 40px;
     cursor: none;
-    /* ✅ Default cursor hide karo taake electric cursor dikhe */
+    /* âœ… Default cursor hide karo taake electric cursor dikhe */
     z-index: 9999;
-    /* ✅ Overlay ke upar rahega lekin cursor se neeche */
+    /* âœ… Overlay ke upar rahega lekin cursor se neeche */
     transition: 0.3s;
 }
 
@@ -1851,7 +2049,7 @@ select {
     display: block;
 }
 
-/* 🔥 QR Download Button (Bottom Right par image ke upar) */
+/* ðŸ”¥ QR Download Button (Bottom Right par image ke upar) */
 .qr-download-btn {
     position: absolute;
     bottom: 15px;
@@ -1863,7 +2061,7 @@ select {
     color: var(--primary);
     border-radius: 30px;
     cursor: none;
-    /* ✅ Yahan bhi default cursor hide karo */
+    /* âœ… Yahan bhi default cursor hide karo */
     font-weight: 600;
     font-size: 14px;
     transition: 0.3s;
@@ -1871,7 +2069,7 @@ select {
     align-items: center;
     gap: 8px;
     z-index: 9999;
-    /* ✅ Overlay ke upar */
+    /* âœ… Overlay ke upar */
 }
 
 .qr-download-btn:hover {
@@ -1997,11 +2195,11 @@ select {
     box-shadow: 0 5px 20px rgba(255, 159, 28, 0.3);
 }
 
-/* ✅ ROW LAYOUT - Image aur Text ko barabar height mein lana */
+/* âœ… ROW LAYOUT - Image aur Text ko barabar height mein lana */
 .legend-row {
     display: flex;
     align-items: stretch;
-    /* ✅ Yeh dono (text aur image) ko barabar height mein kheenga */
+    /* âœ… Yeh dono (text aur image) ko barabar height mein kheenga */
     gap: 50px;
     margin-bottom: 80px;
     opacity: 1;
@@ -2018,7 +2216,7 @@ select {
     flex-direction: row-reverse;
 }
 
-/* ✅ TEXT AREA - Scroll box ko flex se adjust karna */
+/* âœ… TEXT AREA - Scroll box ko flex se adjust karna */
 .legend-text {
     flex: 1;
     display: flex;
@@ -2055,9 +2253,9 @@ select {
     max-height: 500px;
     display: flex;
     flex-direction: column;
-    /* ✅ Content ko column mein rakhega */
+    /* âœ… Content ko column mein rakhega */
     justify-content: flex-start;
-    /* ✅ Text hamesha upar se start hoga */
+    /* âœ… Text hamesha upar se start hoga */
 }
 
 .scrollable-box::-webkit-scrollbar {
@@ -2078,7 +2276,7 @@ select {
     background: var(--primary);
 }
 
-/* ✅ IMAGE AREA - Picture size Paragraph ke hisaab se aayega */
+/* âœ… IMAGE AREA - Picture size Paragraph ke hisaab se aayega */
 .legend-image {
     flex: 1;
     border-radius: 20px;
@@ -2587,7 +2785,7 @@ select {
 
 .footer-logo {
     width: 150px;
-    /* ✅ Logo ko 120px se 150px kiya */
+    /* âœ… Logo ko 120px se 150px kiya */
     height: 150px;
     border-radius: 50%;
     object-fit: cover;
@@ -2611,7 +2809,7 @@ select {
 .footer-brand-name {
     font-family: "Playfair Display", serif;
     font-size: 64px;
-    /* ✅ Text ko 48px se 64px kiya */
+    /* âœ… Text ko 48px se 64px kiya */
     color: white;
     letter-spacing: 2px;
 }
@@ -2635,21 +2833,21 @@ select {
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: 0.4s;
     cursor: pointer;
-    /* ✅ Cursor pointer kiya */
+    /* âœ… Cursor pointer kiya */
 }
 
 .footer-qr-img:hover {
     transform: scale(1.08);
-    /* ✅ Thora aur zoom hoga */
+    /* âœ… Thora aur zoom hoga */
     border-color: var(--primary);
     box-shadow: 0 15px 40px rgba(255, 159, 28, 0.5);
-    /* ✅ Strong glow */
+    /* âœ… Strong glow */
 }
 
 .footer-qr-box p {
     color: #888;
     font-size: 20px;
-    /* ✅ "Scan to Connect" text ko 14px se 20px kiya */
+    /* âœ… "Scan to Connect" text ko 14px se 20px kiya */
     margin-top: 15px;
     text-transform: uppercase;
     letter-spacing: 3px;
@@ -2718,7 +2916,7 @@ select {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 60px;
-    /* ✅ Columns ke beech gap barhaya */
+    /* âœ… Columns ke beech gap barhaya */
     flex: 1;
     align-content: center;
 }
@@ -2726,7 +2924,7 @@ select {
 .footer-col h3 {
     font-family: "Playfair Display", serif;
     font-size: 28px;
-    /* ✅ Headings (Community, Profiles...) ko 22px se 28px kiya */
+    /* âœ… Headings (Community, Profiles...) ko 22px se 28px kiya */
     color: white;
     margin-bottom: 35px;
     position: relative;
@@ -2750,14 +2948,14 @@ select {
 
 .footer-col ul li {
     margin-bottom: 22px;
-    /* ✅ List items ke beech space barhaya */
+    /* âœ… List items ke beech space barhaya */
 }
 
 .footer-col ul li a {
     color: #888;
     text-decoration: none;
     font-size: 18px;
-    /* ✅ Links text ko 16px se 20px kiya */
+    /* âœ… Links text ko 16px se 20px kiya */
     display: flex;
     align-items: center;
     gap: 15px;
@@ -2767,7 +2965,7 @@ select {
 .footer-col ul li a i {
     color: var(--primary);
     font-size: 20px;
-    /* ✅ Icons ko bhi 20px kiya */
+    /* âœ… Icons ko bhi 20px kiya */
     width: 25px;
     text-align: center;
 }
@@ -2789,14 +2987,14 @@ select {
 .footer-bottom p {
     color: #555;
     font-size: 16px;
-    /* ✅ Copyright text ko 14px se 16px kiya */
+    /* âœ… Copyright text ko 14px se 16px kiya */
     margin-bottom: 20px;
 }
 
 .footer-tagline {
     font-family: "Playfair Display", serif;
     font-size: 32px;
-    /* ✅ Tagline ko 26px se 32px kiya */
+    /* âœ… Tagline ko 26px se 32px kiya */
     color: transparent;
     background: linear-gradient(90deg, var(--primary), #F4C430, var(--primary));
     -webkit-background-clip: text;
