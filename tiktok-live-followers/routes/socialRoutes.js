@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const Video = require("../models/Video");
-const { fetchFreshThumbnail, isUsable } = require("../services/thumbnailService");
+const { fetchFreshThumbnail, isUsable, isStreamUsable } = require("../services/thumbnailService");
 const { getRankings, updateRanking } = require("../services/rankingService");
 
 // Cache file path for account statistics
@@ -97,18 +97,6 @@ function mapVideoDoc(doc) {
         platform: doc.platform || "tiktok",
         isShort: doc.isShort || false
     };
-}
-
-// Check if a TikTok play/stream URL is still usable (not expired)
-function isStreamUsable(url) {
-    if (!url) return false;
-    // Check for x-expires parameter in the URL
-    const exp = String(url).match(/x-expires=(\d+)/);
-    if (exp) {
-        return (+exp[1] * 1000) > Date.now();
-    }
-    // If no expiry marker, assume usable
-    return true;
 }
 
 // =======================
@@ -552,11 +540,11 @@ router.get("/tiktok-play", async (req, res) => {
             return res.json({ success: false, error: "Not allowed" });
         }
 
-        // Check if the stored playUrl is still usable
-        let url = doc.playUrl && isStreamUsable(doc.playUrl) ? doc.playUrl : null;
-
-        // If not, try to resolve via thumbnailService (tikwm + page scrape fallback)
-        if (!url && doc.webVideoUrl) {
+        // Always try to get a fresh playable URL from the resolver (tikwm.com)
+        // TikTok CDN URLs are signed, IP-bound, and can return 503/403 even before timestamp expiry.
+        // The resolver (tikwm.com) returns a fresh working CDN URL on each request.
+        let url = null;
+        if (doc.webVideoUrl) {
             try {
                 const { fetchFreshPlayUrl } = require("../services/thumbnailService");
                 url = await fetchFreshPlayUrl(doc.webVideoUrl);
@@ -570,6 +558,11 @@ router.get("/tiktok-play", async (req, res) => {
             } catch (e) {
                 console.error("Play URL resolve failed:", e.message);
             }
+        }
+
+        // Fallback to stored playUrl only if resolver fails and stored URL appears usable
+        if (!url && doc.playUrl && isStreamUsable(doc.playUrl)) {
+            url = doc.playUrl;
         }
 
         res.json({

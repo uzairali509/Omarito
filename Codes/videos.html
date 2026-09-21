@@ -678,6 +678,14 @@
         );
 
         function buildShortsCard(video) {
+            // Skip audio-only / photo-mode TikTok posts (no playable video)
+            // Audio-only posts have duration=0, empty playUrl, or photo-mode thumbnails
+            const isAudioOnly = !video.duration || video.duration === 0 || !video.playUrl || (video.thumbnail && video.thumbnail.includes('photomode-image'));
+            if (isAudioOnly) {
+                console.log('[Filter] Skipping audio-only/photo-mode video:', video.id);
+                return null;
+            }
+            
             const card = document.createElement("div");
             card.className = "card";
 
@@ -854,9 +862,13 @@
 
             // (C) valid videos: render every card. Individual thumbnail
             // failures are handled per-image by the fallback chain above.
+            // Skip audio-only videos (buildShortsCard returns null for them)
             data.videos.forEach(video => {
                 try {
-                    shortsGrid.appendChild(buildShortsCard(video));
+                    const card = buildShortsCard(video);
+                    if (card) {
+                        shortsGrid.appendChild(card);
+                    }
                 } catch (renderErr) {
                     console.error("Skipping one video card:", renderErr);
                 }

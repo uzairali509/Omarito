@@ -301,7 +301,7 @@
             `;
         }
         
-        async function loadTikTokVideo(videoId) {
+        async function loadTikTokVideo(videoId, isRetry = false) {
             showLoader('Resolving TikTok video...');
             try {
                 const res = await fetch(`${API_BASE}/tiktok-video?id=${encodeURIComponent(videoId)}`);
@@ -329,6 +329,9 @@
                 watchOnTiktokBtn.href = playData.watchUrl || `https://www.tiktok.com/@${data.video.username}/video/${videoId}`;
                 watchOnTiktokBtn.style.display = 'inline-flex';
                 
+                // Track retry attempts to prevent infinite reload loops
+                videoElement.dataset.retryCount = videoElement.dataset.retryCount || '0';
+                
                 // Try autoplay, but handle browser autoplay policy
                 videoElement.play().then(() => {
                     // Autoplay worked
@@ -346,6 +349,13 @@
                 return true;
             } catch (err) {
                 console.error('TikTok load error:', err);
+                // Only retry once to get a fresh URL from resolver
+                if (!isRetry) {
+                    console.log('Retrying with fresh URL...');
+                    // Clear the cached playUrl in backend by forcing a fresh fetch
+                    await fetch(`${API_BASE}/tiktok-play?id=${encodeURIComponent(videoId)}&force=1`).catch(() => {});
+                    return loadTikTokVideo(videoId, true);
+                }
                 showError(err.message, `https://www.tiktok.com/@omari.to/video/${videoId}`);
                 return false;
             } finally {
