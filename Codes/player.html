@@ -137,6 +137,14 @@
         .btn:not(.liked) i.fa-solid.fa-heart { display: none; }
         .btn:not(.liked) i.fa-regular.fa-heart { display: inline; }
         
+        /* Favorite button */
+        .btn.favorited { background: var(--primary); border-color: var(--primary); color: #000; }
+        .btn.favorited .fa-bookmark { color: #000; }
+        .btn.favorited i.fa-regular.fa-bookmark { display: none; }
+        .btn.favorited i.fa-solid.fa-bookmark { display: inline; }
+        .btn:not(.favorited) i.fa-solid.fa-bookmark { display: none; }
+        .btn:not(.favorited) i.fa-regular.fa-bookmark { display: inline; }
+        
         /* Comment Modal */
         .comment-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .comment-modal-overlay.active { opacity: 1; visibility: visible; }
@@ -286,6 +294,7 @@
                             <button class="btn" id="likeBtn" title="Like (L)"><i class="fa-regular fa-heart" id="likeIcon"></i><span id="likeCount">0</span></button>
                             <button class="btn" id="commentBtn" title="Comments (C)"><i class="fa-regular fa-comment" id="commentIcon"></i><span id="commentCount">0</span></button>
                             <button class="btn" id="shareBtn" title="Share (S)"><i class="fa-solid fa-share-nodes" id="shareIcon"></i></button>
+                            <button class="btn" id="favoriteBtn" title="Favorite (V)"><i class="fa-regular fa-bookmark" id="favoriteIcon"></i><span id="favoriteCount">0</span></button>
                             <button class="btn" id="downloadBtn" title="Download (D)"><i class="fa-solid fa-download" id="downloadIcon"></i></button>
                             <a class="btn watch-tiktok-btn" id="watchOnTiktokBtn" href="#" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i> Watch on TikTok</a>
                         </div>
@@ -355,6 +364,9 @@
         const commentCount = document.getElementById('commentCount');
         const shareBtn = document.getElementById('shareBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const favoriteBtn = document.getElementById('favoriteBtn');
+        const favoriteIcon = document.getElementById('favoriteIcon');
+        const favoriteCount = document.getElementById('favoriteCount');
         
         let currentVideoType = null; // 'tiktok' or 'youtube'
         let currentVideoId = null;
@@ -468,6 +480,7 @@
                 loadUpNext(videoId);
                 loadPlaylist(data.video.username || 'omari.to');
                 loadLikeStatus();
+                loadFavoriteStatus();
                 
                 return true;
             } catch (err) {
@@ -529,6 +542,7 @@
             loadUpNext(videoId);
             loadPlaylist('omari.to');
             loadLikeStatus();
+            loadFavoriteStatus();
             hideLoader();
         }
         
@@ -900,6 +914,7 @@
             else if (e.code === 'KeyC') { e.preventDefault(); openCommentModal(); }
             else if (e.code === 'KeyS') { e.preventDefault(); shareVideo(); }
             else if (e.code === 'KeyD') { e.preventDefault(); downloadVideo(); }
+            else if (e.code === 'KeyV') { e.preventDefault(); toggleFavorite(); }
             else if (e.code === 'ArrowLeft' && !e.shiftKey) { e.preventDefault(); seekTo(Math.max(0, (videoElement.currentTime / videoElement.duration * 100) - 5)); }
             else if (e.code === 'ArrowRight' && !e.shiftKey) { e.preventDefault(); seekTo(Math.min(100, (videoElement.currentTime / videoElement.duration * 100) + 5)); }
             else if (e.code === 'ArrowLeft' && e.shiftKey) playPrev();
@@ -1059,6 +1074,77 @@
                 }
             } catch (err) {
                 console.error('Load like status error:', err);
+            }
+        }
+        
+        // Toggle Favorite
+        async function toggleFavorite() {
+            if (!isLoggedIn) {
+                showToast('Please log in to favorite videos');
+                return;
+            }
+            
+            if (!currentVideoId || !currentVideoType) return;
+            
+            favoriteBtn.disabled = true;
+            favoriteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/videos/${currentVideoId}/favorite`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ type: currentVideoType })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    favoriteCount.textContent = formatStat(data.favoriteCount);
+                    if (data.userFavorited) {
+                        favoriteIcon.className = 'fa-solid fa-bookmark';
+                        favoriteBtn.classList.add('favorited');
+                        favoriteBtn.title = 'Remove from Favorites';
+                    } else {
+                        favoriteIcon.className = 'fa-regular fa-bookmark';
+                        favoriteBtn.classList.remove('favorited');
+                        favoriteBtn.title = 'Add to Favorites';
+                    }
+                } else {
+                    showToast(data.error || 'Failed to toggle favorite');
+                }
+            } catch (err) {
+                console.error('Favorite error:', err);
+                showToast('Failed to toggle favorite');
+            } finally {
+                favoriteBtn.disabled = false;
+            }
+        }
+        
+        // Load favorite status on video load
+        async function loadFavoriteStatus() {
+            if (!currentVideoId || !currentVideoType) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/videos/${currentVideoId}/favorite?type=${currentVideoType}`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    favoriteCount.textContent = formatStat(data.favoriteCount);
+                    if (data.userFavorited) {
+                        favoriteIcon.className = 'fa-solid fa-bookmark';
+                        favoriteBtn.classList.add('favorited');
+                        favoriteBtn.title = 'Remove from Favorites';
+                    } else {
+                        favoriteIcon.className = 'fa-regular fa-bookmark';
+                        favoriteBtn.classList.remove('favorited');
+                        favoriteBtn.title = 'Add to Favorites';
+                    }
+                }
+            } catch (err) {
+                console.error('Load favorite status error:', err);
             }
         }
         
@@ -1369,6 +1455,23 @@
             } else {
                 alert(message);
             }
+        }
+        
+        // New action button event listeners
+        if (likeBtn) {
+            likeBtn.addEventListener('click', toggleLike);
+        }
+        if (commentBtn) {
+            commentBtn.addEventListener('click', openCommentModal);
+        }
+        if (shareBtn) {
+            shareBtn.addEventListener('click', shareVideo);
+        }
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', downloadVideo);
+        }
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', toggleFavorite);
         }
         
         // Check auth state on load
