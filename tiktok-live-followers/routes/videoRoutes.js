@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Like = require("../models/Like");
 const Comment = require("../models/Comment");
+const Favorite = require("../models/Favorite");
 const User = require("../models/User");
 const Video = require("../models/Video");
 
@@ -303,5 +304,183 @@ router.get("/api/videos/:id/download", authenticateUser, async (req, res) => {
         res.status(500).json({ success: false, error: "Failed to process download" });
     }
 });
+
+// ==================== FAVORITE SYSTEM ====================
+
+// Get favorite status and count for a video
+router.get("/api/videos/:id/favorite", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const videoType = req.query.type || 'tiktok';
+        
+        // Get total favorite count
+        const favoriteCount = await Favorite.countDocuments({ video: id, videoType });
+        
+        // Check if current user has favorited (if authenticated)
+        let userFavorited = false;
+        const token = req.cookies.token;
+        if (token) {
+            try {
+                const jwt = require("jsonwebtoken");
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const userFavorite = await Favorite.findOne({ 
+                    user: decoded.id, 
+                    video: id, 
+                    videoType 
+                });
+                userFavorited = !!userFavorite;
+            } catch (error) {
+                // Token invalid, continue without user favorite status
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            favoriteCount, 
+            userFavorited 
+        });
+    } catch (error) {
+        console.error("Get favorite status error:", error);
+        res.status(500).json({ success: false, error: "Failed to get favorite status" });
+    }
+});
+
+// Favorite a video (requires authentication)
+router.post("/api/videos/:id/favorite", authenticateUser, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const videoType = req.body.type || 'tiktok';
+        
+        // Check if already favorited
+        const existingFavorite = await Favorite.findOne({ 
+            user: req.user._id, 
+            video: id, 
+            videoType 
+        });
+        
+        if (existingFavorite) {
+            return res.json({ 
+                success: true, 
+                alreadyFavorited: true, 
+                favoriteCount: await Favorite.countDocuments({ video: id, videoType }),
+                userFavorited: true
+            });
+        }
+        
+        // Create new favorite
+        await Favorite.create({
+            user: req.user._id,
+            video: id,
+            videoType
+        });
+        
+        const favoriteCount = await Favorite.countDocuments({ video: id, videoType });
+        
+        res.json({ 
+            success: true, 
+            favoriteCount, 
+            userFavorited: true 
+        });
+    } catch (error) {
+        if (error.code === 11000) {
+            // Duplicate key error (already favorited)
+            const favoriteCount = await Favorite.countDocuments({ video: id, videoType });
+            return res.json({ 
+                success: true, 
+                alreadyFavorited: true, 
+                favoriteCount,
+                userFavorited: true
+            });
+        }
+        console.error("Favorite video error:", error);
+        res.status(500).json({ success: false, error: "Failed to favorite video" });
+    }
+});
+
+// Unfavorite a video (requires authentication)
+router.delete("/api/videos/:id/favorite", authenticateUser, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const videoType = req.query.type || 'tiktok';
+        
+        await Favorite.deleteOne({ 
+            user: req.user._id, 
+            video: id, 
+            videoType 
+        });
+        
+        const favoriteCount = await Favorite.countDocuments({ video: id, videoType });
+        
+        res.json({ 
+            success: true, 
+            favoriteCount, 
+            userFavorited: false 
+        });
+    } catch (error) {
+        console.error("Unfavorite video error:", error);
+        res.status(500).json({ success: false, error: "Failed to unfavorite video" });
+    }
+});
+
+// Get user's favorites
+router.get("/api/user/favorites", authenticateUser, async (req, res) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const skip = (page - 1) * limit;
+        
+        const [favorites, total] = await Promise.all([
+            Favorite.find({ user: req.user._id })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Favorite.countDocuments({ user: req.user._id })
+        ]);
+        
+        // Enrich favorites with video data
+        const videoIds = favorites.map(f => f.video);
+        const videoTypes = favorites.map(f => f.videoType);
+        
+        // Fetch video details from Video collection
+        const videos = await Video.find({
+            $or: videoIds.map((id, index) => ({
+                videoId: id,
+                platform: videoTypes[index] === 'youtube' ? 'youtube' : 'tiktok'
+            }))
+        }).lean();
+        
+        // Create lookup map
+        const videoMap = new Map();
+        videos.forEach(v => {
+            const key = `${v.platform || 'tiktok'}:${v.videoId}`;
+            videoMap.set(key, v);
+        });
+        
+        // Enrich favorites
+        const enrichedFavorites = favorites.map(fav => {
+            const key = `${fav.videoType}:${fav.video}`;
+            const video = videoMap.get(key);
+            return {
+                ...fav,
+                videoData: video || null
+            };
+        });
+        
+        res.json({ 
+            success: true, 
+            favorites: enrichedFavorites,
+            page,
+            limit,
+            total,
+            hasMore: skip + favorites.length < total
+        });
+    } catch (error) {
+        console.error("Get favorites error:", error);
+        res.status(500).json({ success: false, error: "Failed to get favorites" });
+    }
+});
+
+module.exports = router;
 
 module.exports = router;
