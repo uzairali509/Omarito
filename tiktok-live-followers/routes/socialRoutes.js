@@ -368,15 +368,21 @@ router.get("/tiktok-upnext", async (req, res) => {
         const playlistId = String(req.query.playlistId || "").trim();
 
         // Build the allowlist pipeline: match ANY of the allowed accounts
-        const matchStage = {
+        // Include legacy records without platform field
+        const baseMatchStage = {
             isActive: true,
-            platform: "tiktok",
-            $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
+            $and: [
+                { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] },
+                { $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) })) }
+            ]
         };
+
+        const matchStage = { ...baseMatchStage };
 
         // Exclude the currently playing video
         if (exclude) {
             matchStage.$and = [
+                ...matchStage.$and,
                 { videoId:    { $ne: exclude } },
                 { tiktok_id:  { $ne: exclude } }
             ];
@@ -387,7 +393,7 @@ router.get("/tiktok-upnext", async (req, res) => {
         if (playlistId && OFFICIAL_PLAYLIST_IDS && OFFICIAL_PLAYLIST_IDS[playlistId]) {
             // Prefer videos from the same playlist first, then fill with others.
             // Use a two-query approach: same-playlist videos first, then random fill.
-            const playlistMatchStage = { ...matchStage, playlistIds: playlistId };
+            const playlistMatchStage = { ...baseMatchStage, playlistIds: playlistId };
             
             const samePlaylist = await Video.aggregate([
                 { $match: playlistMatchStage },
@@ -401,7 +407,7 @@ router.get("/tiktok-upnext", async (req, res) => {
             // Fill remaining slots with other allowed videos
             const excludeIds = samePlaylist.map(v => v.videoId);
             const otherMatch = {
-                ...matchStage,
+                ...baseMatchStage,
                 videoId: { $nin: excludeIds },
                 playlistIds: { $ne: playlistId }
             };
@@ -743,6 +749,33 @@ router.get("/youtube-videos", async (req, res) => {
     } catch (err) {
         console.error("GET /youtube-videos error:", err);
         res.status(500).json({ success: false, error: "Failed to fetch YouTube videos" });
+    }
+});
+
+// =======================
+// GET /youtube-video
+// Single YouTube video lookup by id
+// =======================
+router.get("/youtube-video", async (req, res) => {
+    try {
+        const id = String(req.query.id || "").trim();
+        if (!id) return res.json({ success: false, error: "Missing id" });
+
+        const doc = await Video.findOne({
+            videoId: id,
+            platform: "youtube",
+            isActive: true
+        }).lean();
+
+        if (!doc) {
+            return res.json({ success: false, error: "Video not found" });
+        }
+
+        const videoData = mapVideoDoc(doc);
+        res.json({ success: true, video: videoData });
+    } catch (err) {
+        console.error("GET /youtube-video error:", err);
+        res.status(500).json({ success: false, error: "Failed to fetch video" });
     }
 });
 

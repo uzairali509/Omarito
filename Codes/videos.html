@@ -679,8 +679,8 @@
 
         function buildShortsCard(video) {
             // Skip audio-only / photo-mode TikTok posts (no playable video)
-            // Audio-only posts have duration=0, empty playUrl, or photo-mode thumbnails
-            const isAudioOnly = !video.duration || video.duration === 0 || !video.playUrl || (video.thumbnail && video.thumbnail.includes('photomode-image'));
+            // Audio-only posts have duration=0, empty playUrl, photo-mode thumbnails, or mime_type=audio_mp4
+            const isAudioOnly = !video.duration || video.duration === 0 || !video.playUrl || (video.thumbnail && video.thumbnail.includes('photomode-image')) || (video.playUrl && video.playUrl.includes('mime_type=audio_mp4'));
             if (isAudioOnly) {
                 console.log('[Filter] Skipping audio-only/photo-mode video:', video.id);
                 return null;

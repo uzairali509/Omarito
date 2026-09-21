@@ -131,6 +131,10 @@
     </style>
 </head>
 <body>
+    <!-- ELECTRIC CURSOR ELEMENTS -->
+    <div class="electric-cursor"></div>
+    <canvas id="lightningCanvas"></canvas>
+
     <nav class="top-navbar">
         <div class="logo">
             <a href="/">
@@ -363,11 +367,33 @@
             }
         }
         
-        function loadYouTubeVideo(videoId) {
+        async function loadYouTubeVideo(videoId) {
             showLoader('Loading YouTube video...');
             currentVideoData = { videoId, type: 'youtube' };
-            videoTitleEl.textContent = 'YouTube Video';
-            videoMetaEl.innerHTML = '<span>YouTube</span>';
+            watchOnTiktokBtn.style.display = 'none';
+            
+            videoElement.style.display = 'none';
+            youtubeIframe.style.display = 'block';
+            videoWrapper.classList.add('mode-youtube');
+            videoWrapper.classList.remove('mode-tiktok');
+            
+            // Fetch YouTube video metadata
+            try {
+                const res = await fetch(`${API_BASE}/youtube-video?id=${encodeURIComponent(videoId)}`);
+                const data = await res.json();
+                if (data.success && data.video) {
+                    currentVideoData = data.video;
+                    updateVideoInfo(data.video);
+                } else {
+                    videoTitleEl.textContent = 'YouTube Video';
+                    videoMetaEl.innerHTML = '<span>YouTube</span>';
+                }
+            } catch (err) {
+                console.error('YouTube metadata fetch error:', err);
+                videoTitleEl.textContent = 'YouTube Video';
+                videoMetaEl.innerHTML = '<span>YouTube</span>';
+            }
+            
             watchOnTiktokBtn.style.display = 'none';
             
             videoElement.style.display = 'none';
@@ -436,14 +462,27 @@
         
         async function loadUpNext(excludeId) {
             try {
-                const res = await fetch(`${API_BASE}/tiktok-upnext?exclude=${encodeURIComponent(excludeId)}&limit=6`);
+                // Fetch a larger pool for randomization (fetch more than needed, then shuffle and pick)
+                const res = await fetch(`${API_BASE}/tiktok-upnext?exclude=${encodeURIComponent(excludeId)}&limit=20`);
                 const data = await res.json();
                 if (data.success && data.videos.length) {
-                    upNextGrid.innerHTML = data.videos.map(v => `
-                        <div class="up-next-card" data-id="${v.id}" data-type="tiktok">
+                    // Filter out audio-only/photo-mode videos
+                    const filtered = data.videos.filter(v => 
+                        v.duration && v.duration > 0 && 
+                        v.playUrl && 
+                        !(v.thumbnail && v.thumbnail.includes('photomode-image')) &&
+                        !(v.playUrl && v.playUrl.includes('mime_type=audio_mp4'))
+                    );
+                    
+                    // Shuffle using Fisher-Yates and pick first 6
+                    const shuffled = shuffleArray([...filtered]);
+                    const selected = shuffled.slice(0, 6);
+                    
+                    upNextGrid.innerHTML = selected.map(v => `
+                        <div class="up-next-card" data-id="${v.id}" data-type="${v.platform || 'tiktok'}">
                             <img class="up-next-thumb" src="${v.thumbnail || ''}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"284\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
                             <div class="up-next-info">
-                                <div class="up-next-card-title">${v.title || 'TikTok Video'}</div>
+                                <div class="up-next-card-title">${v.title || 'Video'}</div>
                                 <div class="up-next-card-meta">
                                     <span>${formatStat(v.views)} views</span>
                                     <span>${formatTime(v.duration)}</span>
@@ -460,13 +499,37 @@
             }
         }
         
+        // Fisher-Yates shuffle for proper randomization
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
         async function loadPlaylist(username) {
             try {
                 const res = await fetch(`${API_BASE}/tiktok-grid-videos?username=${encodeURIComponent(username)}&limit=50`);
                 const data = await res.json();
                 if (data.success && data.videos.length) {
-                    playlistVideos = data.videos;
-                    currentPlaylistIndex = playlistVideos.findIndex(v => v.id === currentVideoId);
+                    // Filter out audio-only/photo-mode videos
+                    let filtered = data.videos.filter(v => 
+                        v.duration && v.duration > 0 && 
+                        v.playUrl && 
+                        !(v.thumbnail && v.thumbnail.includes('photomode-image')) &&
+                        !(v.playUrl && v.playUrl.includes('mime_type=audio_mp4'))
+                    );
+                    
+                    // Remove the currently playing video from the playlist pool
+                    filtered = filtered.filter(v => v.id !== currentVideoId);
+                    
+                    // Shuffle the playlist for randomization
+                    filtered = shuffleArray([...filtered]);
+                    
+                    // Take first 20 for the sidebar
+                    playlistVideos = filtered.slice(0, 20);
+                    currentPlaylistIndex = -1; // No active index since we're not in a linear playlist
                     renderPlaylist();
                 }
             } catch (err) {
@@ -476,7 +539,7 @@
         
         function renderPlaylist() {
             playlistContainer.innerHTML = playlistVideos.slice(0, 20).map((v, i) => `
-                <div class="playlist-item ${i === currentPlaylistIndex ? 'active' : ''}" data-id="${v.id}" data-type="tiktok">
+                <div class="playlist-item" data-id="${v.id}" data-type="${v.platform || 'tiktok'}">
                     <img class="playlist-thumb" src="${v.thumbnail || ''}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"56\" height=\"56\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
                     <div class="playlist-info">
                         <div class="playlist-item-title">${v.title || 'TikTok Video'}</div>
@@ -513,16 +576,62 @@
         }
         
         function playPrev() {
-            if (currentPlaylistIndex > 0) {
-                const prevVideo = playlistVideos[currentPlaylistIndex - 1];
-                loadVideo(prevVideo.id, 'tiktok');
+            // Get a previous video from the sidebar playlist
+            if (playlistVideos.length > 0) {
+                const randomIndex = Math.floor(Math.random() * playlistVideos.length);
+                const prevVideo = playlistVideos[randomIndex];
+                loadVideo(prevVideo.id, prevVideo.platform || 'tiktok');
+                return;
             }
+            
+            // Fallback: fetch a fresh random video
+            loadRandomVideo();
         }
         
         function playNext() {
-            if (currentPlaylistIndex < playlistVideos.length - 1) {
-                const nextVideo = playlistVideos[currentPlaylistIndex + 1];
-                loadVideo(nextVideo.id, 'tiktok');
+            // Get the next video from the current playlist (Up Next grid or sidebar playlist)
+            // First check if there's an Up Next card we can use
+            const upNextCards = upNextGrid.querySelectorAll('.up-next-card');
+            if (upNextCards.length > 0) {
+                // Pick a random card from Up Next for variety
+                const randomIndex = Math.floor(Math.random() * upNextCards.length);
+                const nextVideoId = upNextCards[randomIndex].dataset.id;
+                const nextVideoType = upNextCards[randomIndex].dataset.type || 'tiktok';
+                loadVideo(nextVideoId, nextVideoType);
+                return;
+            }
+            
+            // Fallback to sidebar playlist
+            if (playlistVideos.length > 0) {
+                // Pick a random video from the sidebar playlist
+                const randomIndex = Math.floor(Math.random() * playlistVideos.length);
+                const nextVideo = playlistVideos[randomIndex];
+                loadVideo(nextVideo.id, nextVideo.platform || 'tiktok');
+                return;
+            }
+            
+            // Last resort: fetch a fresh random video
+            loadRandomVideo();
+        }
+        
+        async function loadRandomVideo() {
+            try {
+                const res = await fetch(`${API_BASE}/tiktok-upnext?exclude=${encodeURIComponent(currentVideoId)}&limit=20`);
+                const data = await res.json();
+                if (data.success && data.videos.length) {
+                    const filtered = data.videos.filter(v => 
+                        v.duration && v.duration > 0 && 
+                        v.playUrl && 
+                        !(v.thumbnail && v.thumbnail.includes('photomode-image')) &&
+                        !(v.playUrl && v.playUrl.includes('mime_type=audio_mp4'))
+                    );
+                    if (filtered.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * filtered.length);
+                        loadVideo(filtered[randomIndex].id, filtered[randomIndex].platform || 'tiktok');
+                    }
+                }
+            } catch (err) {
+                console.error('Random video load error:', err);
             }
         }
         
@@ -721,5 +830,8 @@
             document.head.appendChild(tag);
         }
     </script>
+
+    <!-- Load shared script.js for electric cursor, notifications, etc. -->
+    <script src="/Codes/script.js"></script>
 </body>
 </html>
