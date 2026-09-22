@@ -73,11 +73,26 @@ async function scrapeFreshThumbnail(webVideoUrl) {
 }
 
 /**
- * Preferred refresh path: TikTok's public oEmbed endpoint returns the
- * current signed thumbnail as JSON (lightweight and not rate-limited
- * like full page fetches). Falls back to page scraping.
+ * Preferred refresh path: tikwm.com API returns current signed thumbnail URLs.
+ * Falls back to oEmbed, then page scraping.
  */
 async function fetchFreshThumbnail(webVideoUrl) {
+    // Try tikwm first (same resolver used for play URLs - works reliably)
+    try {
+        const { data } = await axios.get("https://www.tikwm.com/api/", {
+            params: { url: webVideoUrl },
+            headers: { "User-Agent": BROWSER_UA },
+            timeout: 15000
+        });
+        if (data && data.code === 0 && data.data) {
+            // Prefer origin_cover (full quality), then cover, then ai_dynamic_cover
+            return data.data.origin_cover || data.data.cover || data.data.ai_dynamic_cover || null;
+        }
+    } catch (err) {
+        // fall through
+    }
+    
+    // Try oEmbed
     try {
         const { data } = await axios.get(
             "https://www.tiktok.com/oembed",

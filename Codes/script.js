@@ -678,10 +678,11 @@ async function loadRanking() {
             if (worldEl) worldEl.innerText = data.rankings.world !== null ? "#" + data.rankings.world : "Rank unavailable";
             if (kzEl) kzEl.innerText = data.rankings.kazakhstan !== null ? "#" + data.rankings.kazakhstan : "Rank unavailable";
         } else {
-            // No valid data - show "Rank unavailable"
-            if (asiaEl) asiaEl.innerText = "Rank unavailable";
-            if (worldEl) worldEl.innerText = "Rank unavailable";
-            if (kzEl) kzEl.innerText = "Rank unavailable";
+            // No valid data - show API message if available, otherwise "Rank unavailable"
+            const message = data.message || "Rank unavailable";
+            if (asiaEl) asiaEl.innerText = message;
+            if (worldEl) worldEl.innerText = message;
+            if (kzEl) kzEl.innerText = message;
         }
 
     } catch (error) {
