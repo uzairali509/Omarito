@@ -369,11 +369,18 @@ router.get("/tiktok-upnext", async (req, res) => {
 
         // Build the allowlist pipeline: match ANY of the allowed accounts
         // Include legacy records without platform field
+        // Filter out audio-only/photo-mode videos
         const baseMatchStage = {
             isActive: true,
             $and: [
                 { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] },
-                { $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) })) }
+                { $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) })) },
+                { duration: { $gt: 0 } },
+                { $or: [
+                    { thumbnail: { $not: /photomode-image/ } },
+                    { thumbnail: { $exists: false } },
+                    { thumbnail: "" }
+                ]}
             ]
         };
 
@@ -612,13 +619,20 @@ router.get("/tiktok-grid-videos", async (req, res) => {
 
         // Base query: allowlist enforced via webVideoUrl
         // Match platform: "tiktok" OR platform doesn't exist (backward compat)
+        // Filter out audio-only/photo-mode videos
         const baseQuery = {
             isActive: true,
             $or: [
                 { platform: "tiktok" },
                 { platform: { $exists: false } }
             ],
-            webVideoUrl: handleRegex(username)
+            webVideoUrl: handleRegex(username),
+            duration: { $gt: 0 },
+            $or: [
+                { thumbnail: { $not: /photomode-image/ } },
+                { thumbnail: { $exists: false } },
+                { thumbnail: "" }
+            ]
         };
 
         let videos = [];
@@ -684,11 +698,18 @@ router.get("/tiktok-all-videos", async (req, res) => {
 
         // Build query matching ANY allowed creator
         // Match platform: "tiktok" OR platform doesn't exist (backward compat)
+        // Filter out audio-only/photo-mode videos
         const matchStage = {
             isActive: true,
             $and: [
                 { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] },
-                { $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) })) }
+                { $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) })) },
+                { duration: { $gt: 0 } },
+                { $or: [
+                    { thumbnail: { $not: /photomode-image/ } },
+                    { thumbnail: { $exists: false } },
+                    { thumbnail: "" }
+                ]}
             ]
         };
 
@@ -787,27 +808,38 @@ router.get("/notifications", async (req, res) => {
     try {
         const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
         
-        // Build the allowlist pipeline: match ANY of the allowed accounts
-        const matchStage = {
+        // Build the allowlist pipeline: match ANY of the allowed accounts for TikTok
+        // Also include YouTube videos
+        const tiktokMatch = {
             isActive: true,
             platform: "tiktok",
             $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
         };
         
-        // Sort by createTime descending to get newest first
-        const docs = await Video.find(matchStage)
-            .sort({ createTime: -1 })
-            .limit(limit)
-            .lean();
+        const youtubeMatch = {
+            isActive: true,
+            platform: "youtube"
+        };
         
-        const notifications = docs.map(doc => ({
+        // Fetch both TikTok and YouTube videos, sorted by createTime
+        const [tiktokDocs, youtubeDocs] = await Promise.all([
+            Video.find(tiktokMatch).sort({ createTime: -1 }).limit(limit).lean(),
+            Video.find(youtubeMatch).sort({ createTime: -1 }).limit(limit).lean()
+        ]);
+        
+        // Combine and sort by createTime descending
+        const allDocs = [...tiktokDocs, ...youtubeDocs]
+            .sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
+            .slice(0, limit);
+        
+        const notifications = allDocs.map(doc => ({
             videoId: doc.videoId || doc.tiktok_id,
             creator: doc.creator,
             username: doc.username,
             title: doc.title || doc.description || '',
             thumbnail: doc.thumbnail,
             createTime: doc.createTime,
-            platform: 'tiktok',
+            platform: doc.platform || 'tiktok',
             creatorAvatar: doc.avatar
         }));
         

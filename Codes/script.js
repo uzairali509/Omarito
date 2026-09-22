@@ -48,63 +48,9 @@ getTikTokData();
 setInterval(getTikTokData, 60000);
 
 // ===== NOTIFICATION SYSTEM =====
-async function fetchNotifications() {
-    try {
-        const response = await fetch(API_BASE + '/notifications');
-        const data = await response.json();
-        if (data.success && data.notifications) {
-            renderNotifications(data.notifications);
-            updateNotificationBadge(data.notifications);
-        }
-    } catch (e) {
-        console.log('Notification fetch error:', e);
-    }
-}
+let currentUser = null;
 
-function renderNotifications(notifications) {
-    const list = document.getElementById('notificationList');
-    if (!list) return;
-    
-    if (!notifications || notifications.length === 0) {
-        list.innerHTML = '<div class="notification-empty">No new updates</div>';
-        return;
-    }
-    
-    list.innerHTML = notifications.map(n => {
-        const avatar = n.creatorAvatar || '/Public/Images/default-user.png';
-        const platformIcon = n.platform === 'youtube' ? 'fab fa-youtube' : 'fab fa-tiktok';
-        const platformName = n.platform === 'youtube' ? 'YouTube' : 'TikTok';
-        return `
-            <a href="/Codes/player.html?id=${n.videoId}" class="notification-item" data-id="${n.videoId}">
-                <img src="${avatar}" alt="" class="notification-avatar">
-                <div class="notification-content">
-                    <div class="notification-title">
-                        <span class="creator">${n.creator}</span>
-                        <span class="platform">${platformName}</span>
-                    </div>
-                    <div class="notification-desc">${n.title || 'New video uploaded'}</div>
-                    <div class="notification-time">${formatRelativeTime(n.createTime)}</div>
-                </div>
-            </a>
-        `.trim();
-    }).join('');
-}
-
-function updateNotificationBadge(notifications) {
-    const badge = document.getElementById('notificationBadge');
-    if (!badge) return;
-    
-    const lastSeen = localStorage.getItem('lastNotificationSeen') || 0;
-    const unreadCount = notifications.filter(n => new Date(n.createTime).getTime() > lastSeen).length;
-    
-    if (unreadCount > 0) {
-        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-        badge.style.display = 'flex';
-    } else {
-        badge.style.display = 'none';
-    }
-}
-
+// Format relative time for notifications
 function formatRelativeTime(dateString) {
     if (!dateString) return 'Just now';
     const date = new Date(dateString);
@@ -121,16 +67,114 @@ function formatRelativeTime(dateString) {
     return date.toLocaleDateString();
 }
 
+// Fetch notifications for logged-in user
+async function fetchNotifications() {
+    if (!currentUser) return;
+    
+    try {
+        const response = await fetch(API_BASE + '/notifications');
+        const data = await response.json();
+        if (data.success && data.notifications) {
+            renderNotifications(data.notifications);
+            updateNotificationBadge(data.notifications);
+        }
+    } catch (e) {
+        console.log('Notification fetch error:', e);
+    }
+}
+
+// Render notifications in the panel
+function renderNotifications(notifications) {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    
+    if (!notifications || notifications.length === 0) {
+        list.innerHTML = '<div class="notification-empty">No new updates</div>';
+        return;
+    }
+    
+    list.innerHTML = notifications.map(n => {
+        const avatar = n.creatorAvatar || '/Public/Images/default-user.png';
+        const platformName = n.platform === 'youtube' ? 'YouTube' : 'TikTok';
+        return `
+            <a href="/Codes/player.html?type=${n.platform}&id=${n.videoId}" class="notification-item" data-id="${n.videoId}">
+                <img src="${avatar}" alt="" class="notification-avatar">
+                <div class="notification-content">
+                    <div class="notification-title">
+                        <span class="creator">${n.creator || n.username}</span>
+                        <span class="platform">${platformName}</span>
+                    </div>
+                    <div class="notification-desc">${n.title || 'New video uploaded'}</div>
+                    <div class="notification-time">${formatRelativeTime(n.createTime)}</div>
+                </div>
+            </a>
+        `.trim();
+    }).join('');
+}
+
+// Update notification badge count
+function updateNotificationBadge(notifications) {
+    const badge = document.getElementById('notificationBadge');
+    if (!badge) return;
+    
+    if (!currentUser) {
+        badge.style.display = 'none';
+        return;
+    }
+    
+    const lastSeen = localStorage.getItem('lastNotificationSeen') || 0;
+    const unreadCount = notifications.filter(n => new Date(n.createTime).getTime() > lastSeen).length;
+    
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// Show logged-out notification panel
+function renderLoggedOutPanel() {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    
+    list.innerHTML = `
+        <div class="notification-logged-out">
+            <p>Log in to see your latest video updates.</p>
+            <a href="/Codes/Login.html" class="btn notification-login-btn">Log In</a>
+        </div>
+    `;
+    
+    // Update header to hide "See All Updates" for logged-out users
+    const seeAllLink = document.querySelector('.see-all-link');
+    if (seeAllLink) seeAllLink.style.display = 'none';
+}
+
+// Show logged-in notification panel header
+function renderLoggedInHeader() {
+    const seeAllLink = document.querySelector('.see-all-link');
+    if (seeAllLink) seeAllLink.style.display = 'block';
+}
+
+// Toggle notification panel
 function toggleNotificationPanel() {
     const panel = document.getElementById('notificationPanel');
     if (!panel) return;
     
     if (panel.style.display === 'none' || panel.style.display === '') {
         panel.style.display = 'block';
-        fetchNotifications();
-        // Mark as seen when opened
-        localStorage.setItem('lastNotificationSeen', Date.now().toString());
-        updateNotificationBadge([]);
+        
+        if (currentUser) {
+            // Logged in - fetch and show real notifications
+            renderLoggedInHeader();
+            fetchNotifications();
+            // Mark as seen when opened
+            localStorage.setItem('lastNotificationSeen', Date.now().toString());
+            updateNotificationBadge([]);
+        } else {
+            // Logged out - show login prompt
+            renderLoggedOutPanel();
+        }
     } else {
         panel.style.display = 'none';
     }
@@ -153,10 +197,68 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-// Fetch notifications on load
-fetchNotifications();
+// Notification button click handler
+const notificationBtn = document.getElementById('notificationBtn');
+if (notificationBtn) {
+    notificationBtn.addEventListener('click', toggleNotificationPanel);
+}
+
+// Check auth state and update UI
+async function checkAuthState() {
+    try {
+        const res = await fetch(API_BASE + "/user", { method: "GET", credentials: "include" });
+        if (res.status === 401) {
+            currentUser = null;
+            updateAuthUI();
+            return;
+        }
+        const data = await res.json();
+        if (data.success) {
+            currentUser = data.user;
+        } else {
+            currentUser = null;
+        }
+        updateAuthUI();
+    } catch (e) {
+        currentUser = null;
+        updateAuthUI();
+    }
+}
+
+// Auth state management for notifications
+function updateAuthUI() {
+    const notificationBox = document.getElementById('navNotificationBox');
+    const profileBox = document.getElementById('navProfileBox');
+    const loginLink = document.getElementById('loginLink');
+    
+    const isLoggedIn = !!currentUser;
+    
+    // Notification bell ONLY visible when logged in
+    if (notificationBox) {
+        notificationBox.style.display = isLoggedIn ? 'flex' : 'none';
+    }
+    
+    // Profile box only visible when logged in
+    if (profileBox) {
+        profileBox.style.display = isLoggedIn ? 'flex' : 'none';
+    }
+    
+    // Login link only visible when logged out
+    if (loginLink) {
+        loginLink.style.display = isLoggedIn ? 'none' : 'flex';
+    }
+}
+
+// Initialize auth state on load
+checkAuthState();
+// Fetch notifications on load if logged in
+setTimeout(() => {
+    if (currentUser) fetchNotifications();
+}, 100);
 // Refresh notifications every 5 minutes
-setInterval(fetchNotifications, 300000);
+setInterval(() => {
+    if (currentUser) fetchNotifications();
+}, 300000);
 
 // ===== ELECTRIC CURSOR LOGIC =====
 const cursor = document.querySelector(".electric-cursor");
@@ -267,6 +369,22 @@ function attachMenuEvents() {
         tiktokBtn.addEventListener("click", () => {
             if (!tiktokOpen) { openSubmenu([`<span onclick="visitlink('https://www.tiktok.com/@omari.to')">@omari.to</span>`, `<span onclick="visitlink('https://www.tiktok.com/@omari_t02')">@omari_t02</span>`, `<span onclick="visitlink('https://www.tiktok.com/@dilandyalieva')">@dilandyalieva</span>`]); tiktokOpen = true; }
             else { goBack(); tiktokOpen = false; }
+        });
+    }
+
+    // Songs menu
+    let songsOpen = false;
+    const songsBtn = document.getElementById("songsBtn");
+    if (songsBtn) {
+        songsBtn.addEventListener("click", () => {
+            if (!songsOpen) { 
+                openSubmenu([
+                    `<span onclick="window.location.href='/Codes/player.html?type=youtube&id=G1nGiQZuP5w'"><i class=\"fa-solid fa-play\"></i> WATCH HERE</span>`,
+                    `<span onclick="window.open('https://www.youtube.com/watch?v=G1nGiQZuP5w', '_blank')"><i class=\"fa-brands fa-youtube\"></i> WATCH THERE</span>`
+                ]); 
+                songsOpen = true; 
+            }
+            else { goBack(); songsOpen = false; }
         });
     }
 }
@@ -409,10 +527,19 @@ if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
         try {
             const response = await fetch(API_BASE + '/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } }); // âœ… Localhost hata diya
-            if (response.ok) { localStorage.removeItem('token'); window.location.href = '/Codes/Login.html'; }
+            if (response.ok) { 
+                localStorage.removeItem('token'); 
+                document.getElementById("navNotificationBox").style.display = "none";
+                document.getElementById("navProfileBox").style.display = "none";
+                document.getElementById("loginLink").style.display = "flex";
+                window.location.href = '/Codes/Login.html'; 
+            }
             else { alert("Logout failed, try again!"); }
         } catch (err) {
             localStorage.removeItem('token');
+            document.getElementById("navNotificationBox").style.display = "none";
+            document.getElementById("navProfileBox").style.display = "none";
+            document.getElementById("loginLink").style.display = "flex";
             window.location.href = '/Codes/Login.html';
         }
     });
@@ -428,6 +555,7 @@ async function getUser() {
             const user = data.user;
             document.getElementById("loginLink").style.display = "none";
             document.getElementById("navProfileBox").style.display = "flex";
+            document.getElementById("navNotificationBox").style.display = "flex";
             document.getElementById("navUserName").innerText = user.firstname;
             document.getElementById("userName").innerText = user.firstname + " " + user.lastname;
             document.getElementById("userEmail").innerText = user.email;
@@ -545,23 +673,23 @@ async function loadRanking() {
         const kzEl = document.getElementById("kzRank");
 
         if (data.success && data.rankings) {
-            // Show actual rank values, or "Updating..." if null
-            if (asiaEl) asiaEl.innerText = data.rankings.asia !== null ? "#" + data.rankings.asia : "Updating...";
-            if (worldEl) worldEl.innerText = data.rankings.world !== null ? "#" + data.rankings.world : "Updating...";
-            if (kzEl) kzEl.innerText = data.rankings.kazakhstan !== null ? "#" + data.rankings.kazakhstan : "Updating...";
+            // Show actual rank values, or "Rank unavailable" if null (no real provider data)
+            if (asiaEl) asiaEl.innerText = data.rankings.asia !== null ? "#" + data.rankings.asia : "Rank unavailable";
+            if (worldEl) worldEl.innerText = data.rankings.world !== null ? "#" + data.rankings.world : "Rank unavailable";
+            if (kzEl) kzEl.innerText = data.rankings.kazakhstan !== null ? "#" + data.rankings.kazakhstan : "Rank unavailable";
         } else {
-            // No valid data yet - show "Updating..."
-            if (asiaEl) asiaEl.innerText = "Updating...";
-            if (worldEl) worldEl.innerText = "Updating...";
-            if (kzEl) kzEl.innerText = "Updating...";
+            // No valid data - show "Rank unavailable"
+            if (asiaEl) asiaEl.innerText = "Rank unavailable";
+            if (worldEl) worldEl.innerText = "Rank unavailable";
+            if (kzEl) kzEl.innerText = "Rank unavailable";
         }
 
     } catch (error) {
         console.log("Ranking Error:", error);
-        // Show "Updating..." on error instead of fake fallback values
-        document.getElementById("asiaRank").innerText = "Updating...";
-        document.getElementById("worldRank").innerText = "Updating...";
-        document.getElementById("kzRank").innerText = "Updating...";
+        // Show "Rank unavailable" on error instead of fake fallback values
+        document.getElementById("asiaRank").innerText = "Rank unavailable";
+        document.getElementById("worldRank").innerText = "Rank unavailable";
+        document.getElementById("kzRank").innerText = "Rank unavailable";
     }
 }
 
@@ -1227,3 +1355,59 @@ async function loadVideos(page = 1) {
 
 // Load first page
 loadVideos(1);
+
+// Populate Omari social grid on About page
+async function populateOmariSocialGrid() {
+    const grid = document.getElementById('omariSocialGrid');
+    if (!grid) return; // Not on About page
+    
+    try {
+        // Fetch latest TikTok videos from all allowed creators
+        const res = await fetch(`${API_BASE}/tiktok-all-videos?limit=6`);
+        const data = await res.json();
+        
+        if (data.success && data.videos && data.videos.length > 0) {
+            grid.innerHTML = data.videos.map(video => {
+                const platform = video.platform || 'tiktok';
+                const platformBadge = platform === 'youtube' ? 'youtube' : 'tiktok';
+                const duration = video.duration ? formatDuration(video.duration) : '';
+                const thumb = video.thumbnail || '';
+                
+                return `
+                    <a href="/Codes/player.html?type=${platform}&id=${video.id}" class="omari-social-card" data-id="${video.id}">
+                        <div class="omari-social-thumb">
+                            <img src="${thumb}" alt="${video.title || 'Video'}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"360\" height=\"202\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
+                            ${duration ? `<span class="duration">${duration}</span>` : ''}
+                            <span class="platform-badge ${platformBadge}">${platformBadge.toUpperCase()}</span>
+                        </div>
+                        <div class="omari-social-body">
+                            <div class="omari-social-title">${video.title || 'Video'}</div>
+                            <div class="omari-social-meta">
+                                <span class="omari-social-creator">@${video.username || video.creator || 'omari.to'}</span>
+                            </div>
+                            <div class="omari-social-stats">
+                                <span class="omari-social-stat"><i class="fa-solid fa-eye"></i> ${formatStat(video.views)}</span>
+                                <span class="omari-social-stat"><i class="fa-solid fa-heart"></i> ${formatStat(video.likes)}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        } else {
+            grid.innerHTML = '<div class="omari-social-empty">No videos available</div>';
+        }
+    } catch (err) {
+        console.error('[Omari Social] Failed to load:', err);
+        grid.innerHTML = '<div class="omari-social-empty">Failed to load videos</div>';
+    }
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', populateOmariSocialGrid);
+} else {
+    populateOmariSocialGrid();
+}
+
+// Check auth state for notifications
+checkAuthState();

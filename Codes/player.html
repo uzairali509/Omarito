@@ -242,7 +242,33 @@
                 <span class="brand-name">omari<span class="dot">.</span>to</span>
             </a>
         </div>
-    </nav>
+
+        <ul class="nav-links">
+            <!-- Notification Bell - Always visible -->
+            <div class="nav-notification-toggle" id="navNotificationBox" style="position: relative; display: none;">
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications" onclick="toggleNotificationPanel()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <div class="notification-panel" id="notificationPanel" style="display: none;">
+                    <div class="notification-header">
+                        <h3>NOTIFICATIONS</h3>
+                        <a href="/Codes/updates.html" class="see-all-link">SEE ALL UPDATES</a>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No new updates</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Profile Toggle - Hidden by default, shown when logged in -->
+            <div class="nav-profile-toggle" id="navProfileBox" style="display: none;" onclick="toggleProfilePanel()">
+                <img id="navProfileImg" src="/Public/Images/default-user.png">
+                <span id="navUserName"></span>
+            </div>
+        </ul>
 
     <div id="loaderOverlay" class="loader-overlay">
         <img src="/Public/Images/Logo.png" class="spinner" alt="Loading">
@@ -454,6 +480,9 @@
                 
                 // Check if it's audio-only (some TikTok music videos only have audio)
                 const isAudioOnly = playData.playUrl.includes('mime_type=audio_mp4');
+                if (isAudioOnly) {
+                    throw new Error('This TikTok post is audio-only and cannot be played in the video player.');
+                }
                 
                 videoElement.src = playData.playUrl;
                 videoElement.style.display = 'block';
@@ -487,9 +516,7 @@
                 console.error('TikTok load error:', err);
                 // Only retry once to get a fresh URL from resolver
                 if (!isRetry) {
-                    console.log('Retrying with fresh URL...');
-                    // Clear the cached playUrl in backend by forcing a fresh fetch
-                    await fetch(`${API_BASE}/tiktok-play?id=${encodeURIComponent(videoId)}&force=1`).catch(() => {});
+                    console.log('Retrying with fresh URL from resolver...');
                     return loadTikTokVideo(videoId, true);
                 }
                 showError(err.message, `https://www.tiktok.com/@omari.to/video/${videoId}`);
@@ -992,7 +1019,22 @@
         videoElement.addEventListener('ended', playNext);
         videoElement.addEventListener('error', (e) => {
             console.error('Video error:', videoElement.error);
-            showError('Video playback failed. The stream may have expired.', currentVideoData?.webVideoUrl);
+            const errorCode = videoElement.error?.code;
+            // MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED = 4 (403, format not supported, etc.)
+            // Don't retry on autoplay block (that's not an error event)
+            if (errorCode === 4) {
+                // Check if we can retry with a fresh URL (only once)
+                const retryCount = parseInt(videoElement.dataset.retryCount || '0');
+                if (retryCount === 0) {
+                    videoElement.dataset.retryCount = '1';
+                    console.log('Video load failed (403/unsupported), attempting one retry with fresh URL...');
+                    loadTikTokVideo(currentVideoId, true);
+                    return;
+                }
+                showError('Video playback failed. The stream may have expired or is not playable in this browser.', currentVideoData?.webVideoUrl);
+            } else {
+                showError('Video playback failed. The stream may have expired.', currentVideoData?.webVideoUrl);
+            }
         });
         videoElement.addEventListener('waiting', () => showLoader('Buffering...'));
         videoElement.addEventListener('playing', hideLoader);

@@ -42,6 +42,25 @@
                 <li>About</li>
             </a>
             <li>Favorite</li>
+            <!-- Notification Bell - Always visible -->
+            <div class="nav-notification-toggle" id="navNotificationBox" style="position: relative; display: none;">
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications" onclick="toggleNotificationPanel()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <div class="notification-panel" id="notificationPanel" style="display: none;">
+                    <div class="notification-header">
+                        <h3>NOTIFICATIONS</h3>
+                        <a href="/Codes/updates.html" class="see-all-link">SEE ALL UPDATES</a>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No new updates</div>
+                    </div>
+                </div>
+            </div>
             <!-- Agar login hai toh yeh choti gol image dikhegi right side par -->
             <div class="nav-profile-toggle" id="navProfileBox" style="display: none;" onclick="toggleProfilePanel()">
                 <img id="navProfileImg" src="/Public/Images/default-user.png">
@@ -75,6 +94,7 @@
                 <li id="yearBtn">Year â†’</li>
                 <li id="eventBtn">Special Events â†’</li>
                 <li id="emailBtn">Get Email â†’</li>
+                <li id="songsBtn"><i class="fa-solid fa-music"></i> Songs â†’</li>
                 <li id="locationBtn">Get Destination â†’</li>
                 <li id="visitBtn">Visited Places â†’</li>
                 <a href="/Codes/About.html">
@@ -1095,10 +1115,26 @@
         </div>
     </section>
 
-    <div class="tagembed-widget" style="width:100%;height:100%;overflow:auto;" data-widget-id="328275" data-website="1">
-    </div>
-    <script src="https://widget.tagembed.com/embed.min.js" type="text/javascript"></script>
+        </section>
 
+    <!-- ðŸ”¥ OMARI.TO CUSTOM SOCIAL SECTION (Replaces Tagembed) -->
+    <section class="omari-social-section">
+        <div class="omari-social-header">
+            <h2>OMARI.TO</h2>
+            <p>Latest content & social updates</p>
+        </div>
+        <div class="omari-social-grid" id="omariSocialGrid">
+            <!-- Populated dynamically from site data -->
+        </div>
+        <div class="omari-social-footer">
+            <a href="/Codes/videos.html" class="omari-social-link">
+                <i class="fa-solid fa-play"></i> View All Videos
+            </a>
+            <a href="https://www.tiktok.com/@omari.to" target="_blank" class="omari-social-link tiktok">
+                <i class="fa-brands fa-tiktok"></i> Follow on TikTok
+            </a>
+        </div>
+    </section>
 
 
     <!-- ðŸ”¥ MESSAGE / CONTACT SECTION (Only visible if logged in) -->
@@ -1358,7 +1394,7 @@
                         const el = document.getElementById(id);
                         if (el) el.textContent = (val !== null && val !== undefined)
                             ? '#' + val
-                            : 'Updating...';
+                            : 'Rank unavailable';
                     };
                     if (data && data.rankings) {
                         set('asiaRank',        data.rankings.asia);
@@ -1367,7 +1403,7 @@
                     } else {
                         ['asiaRank', 'worldRank', 'kzRank'].forEach(id => {
                             const el = document.getElementById(id);
-                            if (el) el.textContent = 'Updating...';
+                            if (el) el.textContent = 'Rank unavailable';
                         });
                     }
                     if (data && data.lastUpdated) {
@@ -1378,7 +1414,7 @@
                     console.error('[Rankings] Failed to load:', err);
                     ['asiaRank', 'worldRank', 'kzRank'].forEach(id => {
                         const el = document.getElementById(id);
-                        if (el) el.textContent = 'Updating...';
+                        if (el) el.textContent = 'Rank unavailable';
                     });
                 });
         });

@@ -453,6 +453,37 @@ a {
     font-size: 13px;
 }
 
+/* Logged-out notification panel */
+.notification-logged-out {
+    padding: 30px 20px;
+    text-align: center;
+    color: #888;
+}
+
+.notification-logged-out p {
+    margin: 0 0 16px 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.notification-login-btn {
+    display: inline-block;
+    padding: 10px 24px;
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.notification-login-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(212, 191, 134, 0.4);
+}
+
 /* Mobile adjustments */
 @media (max-width: 600px) {
     .notification-panel {
@@ -3262,5 +3293,223 @@ select {
     to {
         transform: scale(1);
         opacity: 1;
+    }
+}
+
+/* ===== OMARI.TO CUSTOM SOCIAL SECTION ===== */
+.omari-social-section {
+    padding: 60px 8%;
+    background: linear-gradient(180deg, rgba(255, 159, 28, 0.03) 0%, transparent 100%);
+    border-top: 1px solid rgba(255, 159, 28, 0.1);
+    border-bottom: 1px solid rgba(255, 159, 28, 0.1);
+}
+
+.omari-social-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.omari-social-header h2 {
+    font-family: "Playfair Display", serif;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.omari-social-header p {
+    color: #888;
+    font-size: 15px;
+    font-weight: 300;
+}
+
+.omari-social-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.omari-social-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.omari-social-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(212, 191, 134, 0.3);
+    box-shadow: 0 12px 30px rgba(212, 191, 134, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.omari-social-thumb {
+    position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+}
+
+.omari-social-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.omari-social-card:hover .omari-social-thumb img {
+    transform: scale(1.05);
+}
+
+.omari-social-thumb .duration {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.omari-social-thumb .platform-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.omari-social-thumb .platform-badge.tiktok {
+    background: rgba(255, 159, 28, 0.9);
+    color: #000;
+}
+
+.omari-social-thumb .platform-badge.youtube {
+    background: rgba(255, 0, 0, 0.9);
+    color: #fff;
+}
+
+.omari-social-body {
+    padding: 14px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.omari-social-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #f2f2f2;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
+
+.omari-social-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.omari-social-creator {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.omari-social-stats {
+    display: flex;
+    gap: 12px;
+    color: #888;
+    font-size: 11px;
+    margin-top: auto;
+}
+
+.omari-social-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.omari-social-footer {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.omari-social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.omari-social-link:not(.tiktok) {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: #000;
+    border: none;
+}
+
+.omari-social-link:not(.tiktok):hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(212, 191, 134, 0.4);
+}
+
+.omari-social-link.tiktok {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+}
+
+.omari-social-link.tiktok:hover {
+    background: var(--primary);
+    color: #000;
+    box-shadow: 0 8px 25px rgba(255, 159, 28, 0.4);
+}
+
+@media (max-width: 768px) {
+    .omari-social-section {
+        padding: 40px 4%;
+    }
+    
+    .omari-social-header h2 {
+        font-size: 28px;
+    }
+    
+    .omari-social-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .omari-social-footer {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .omari-social-link {
+        width: 100%;
+        justify-content: center;
     }
 }
