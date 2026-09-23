@@ -484,7 +484,10 @@
                     throw new Error('This TikTok post is audio-only and cannot be played in the video player.');
                 }
                 
-                videoElement.src = playData.playUrl;
+                // Use proxy endpoint to stream video with required headers (Referer, Origin)
+                const proxyUrl = `${API_BASE}/tiktok-video-proxy?id=${encodeURIComponent(videoId)}`;
+                
+                videoElement.src = proxyUrl;
                 videoElement.style.display = 'block';
                 youtubeIframe.style.display = 'none';
                 videoWrapper.classList.add('mode-tiktok');

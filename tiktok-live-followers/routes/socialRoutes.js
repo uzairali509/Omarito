@@ -590,6 +590,105 @@ router.get("/tiktok-play", async (req, res) => {
 });
 
 // =======================
+// GET /tiktok-video-proxy
+// Proxy TikTok video stream with required headers (Referer, Origin)
+// TikTok CDN requires these headers, which browser <video> element cannot send
+// =======================
+router.get("/tiktok-video-proxy", async (req, res) => {
+    try {
+        const id = String(req.query.id || "").trim();
+        if (!id) return res.status(400).json({ success: false, error: "Missing id" });
+
+        const doc = await Video.findOne({
+            $or: [
+                { videoId: id },
+                { tiktok_id: id }
+            ],
+            isActive: true,
+            $and: [
+                { $or: [ { platform: "tiktok" }, { platform: { $exists: false } } ] }
+            ]
+        }).lean();
+
+        if (!doc) {
+            return res.status(404).json({ success: false, error: "Video not found" });
+        }
+
+        // Verify allowlist
+        const isAllowed = ALLOWED_USERNAMES.some(u => handleRegex(u).test(doc.webVideoUrl || ""));
+        if (!isAllowed) {
+            return res.status(403).json({ success: false, error: "Not allowed" });
+        }
+
+        // Get fresh play URL
+        let url = null;
+        if (doc.webVideoUrl) {
+            try {
+                const { fetchFreshPlayUrl } = require("../services/thumbnailService");
+                url = await fetchFreshPlayUrl(doc.webVideoUrl);
+            } catch (e) {
+                console.error("Play URL resolve failed:", e.message);
+            }
+        }
+        if (!url && doc.playUrl && isStreamUsable(doc.playUrl)) {
+            url = doc.playUrl;
+        }
+        if (!url) {
+            return res.status(404).json({ success: false, error: "No playable stream found" });
+        }
+
+        // Proxy the video with required headers
+        const axios = require("axios");
+        const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+        
+        const videoRes = await axios.get(url, {
+            responseType: "stream",
+            headers: {
+                "User-Agent": BROWSER_UA,
+                "Referer": "https://www.tiktok.com/",
+                "Origin": "https://www.tiktok.com"
+            },
+            timeout: 30000,
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+        });
+
+        // Forward relevant headers
+        res.set({
+            "Content-Type": videoRes.headers["content-type"] || "video/mp4",
+            "Content-Length": videoRes.headers["content-length"],
+            "Accept-Ranges": videoRes.headers["accept-ranges"] || "bytes",
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "Range"
+        });
+
+        // Handle range requests for video seeking
+        const range = req.headers.range;
+        if (range && videoRes.headers["accept-ranges"] === "bytes") {
+            res.set("Content-Range", videoRes.headers["content-range"] || range);
+            res.status(206);
+        }
+
+        videoRes.data.pipe(res);
+        
+        videoRes.data.on("error", (err) => {
+            console.error("[tiktok-video-proxy] Stream error:", err.message);
+            if (!res.headersSent) {
+                res.status(500).end();
+            }
+        });
+
+    } catch (err) {
+        console.error("GET /tiktok-video-proxy error:", err);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: "Failed to proxy video" });
+        }
+    }
+});
+
+// =======================
 // GET /tiktok-grid-videos
 // Video grid with creator + optional playlist filtering.
 // Playlist filtering uses the official numeric playlist ID stored in
