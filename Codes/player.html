@@ -642,9 +642,13 @@
                     const shuffled = shuffleArray([...filtered]);
                     const selected = shuffled.slice(0, 6);
                     
-                    upNextGrid.innerHTML = selected.map(v => `
+                    upNextGrid.innerHTML = selected.map(v => {
+                        const thumb = (v.platform || 'tiktok') === 'tiktok' && v.id
+                            ? `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(v.id)}`
+                            : (v.thumbnail || '');
+                        return `
                         <div class="up-next-card" data-id="${v.id}" data-type="${v.platform || 'tiktok'}">
-                            <img class="up-next-thumb" src="${v.thumbnail || ''}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"284\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
+                            <img class="up-next-thumb" src="${thumb}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"284\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
                             <div class="up-next-info">
                                 <div class="up-next-card-title">${v.title || 'Video'}</div>
                                 <div class="up-next-card-meta">
@@ -653,7 +657,8 @@
                                 </div>
                             </div>
                         </div>
-                    `).join('');
+                    `;
+                    }).join('');
                     upNextGrid.querySelectorAll('.up-next-card').forEach(card => {
                         card.addEventListener('click', () => loadVideo(card.dataset.id, card.dataset.type));
                     });
@@ -702,15 +707,20 @@
         }
         
         function renderPlaylist() {
-            playlistContainer.innerHTML = playlistVideos.slice(0, 20).map((v, i) => `
+            playlistContainer.innerHTML = playlistVideos.slice(0, 20).map((v, i) => {
+                const thumb = (v.platform || 'tiktok') === 'tiktok' && v.id
+                    ? `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(v.id)}`
+                    : (v.thumbnail || '');
+                return `
                 <div class="playlist-item" data-id="${v.id}" data-type="${v.platform || 'tiktok'}">
-                    <img class="playlist-thumb" src="${v.thumbnail || ''}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"56\" height=\"56\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
+                    <img class="playlist-thumb" src="${thumb}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"56\" height=\"56\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
                     <div class="playlist-info">
                         <div class="playlist-item-title">${v.title || 'TikTok Video'}</div>
                         <div class="playlist-item-meta">${formatStat(v.views)} views • ${formatTime(v.duration)}</div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             playlistContainer.querySelectorAll('.playlist-item').forEach(item => {
                 item.addEventListener('click', () => {
                     loadVideo(item.dataset.id, item.dataset.type);

@@ -22,6 +22,17 @@ function formatStat(num) {
     if (n < 1000000000) return clean(n / 1000000, "M");
     return clean(n / 1000000000, "B");
 }
+// ===== DURATION FORMATTING =====
+function formatDuration(secs) {
+    secs = Math.round(Number(secs) || 0);
+    if (!secs) return "";
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0')
+        : m + ':' + String(s).padStart(2, '0');
+}
+
 
 // ===== MENU TOGGLE LOGIC =====
 const toggle = document.getElementById("menuToggle");
@@ -1335,36 +1346,14 @@ function stopConfetti() {
     }
 }
 
-async function loadVideos(page = 1) {
-    const response = await fetch(`${API_BASE}/omari-videos?page=${page}&limit=30`);
-    const data = await response.json();
-
-    if (data.success) {
-        const container = document.getElementById("videos-container");
-        data.videos.forEach(video => {
-            container.innerHTML += `
-        <div class="video-card">
-          <a href="${video.video_url}" target="_blank">
-            <img src="${video.thumbnail}" alt="${video.title}">
-            <p>${video.title}</p>
-          </a>
-        </div>
-      `;
-        });
-    }
-}
-
-// Load first page
-loadVideos(1);
-
-// Populate Omari social grid on About page
+// Populate Omari social grid on About page - Latest 10 videos (TikTok + YouTube)
 async function populateOmariSocialGrid() {
     const grid = document.getElementById('omariSocialGrid');
     if (!grid) return; // Not on About page
     
     try {
-        // Fetch latest TikTok videos from all allowed creators
-        const res = await fetch(`${API_BASE}/tiktok-all-videos?limit=6`);
+        // Fetch latest 10 videos (TikTok + YouTube combined) from new endpoint
+        const res = await fetch(`${API_BASE}/latest-videos?limit=10`);
         const data = await res.json();
         
         if (data.success && data.videos && data.videos.length > 0) {
@@ -1372,7 +1361,13 @@ async function populateOmariSocialGrid() {
                 const platform = video.platform || 'tiktok';
                 const platformBadge = platform === 'youtube' ? 'youtube' : 'tiktok';
                 const duration = video.duration ? formatDuration(video.duration) : '';
-                const thumb = video.thumbnail || '';
+                // Use backend proxy for TikTok thumbnails (fresh signed URLs), direct for YouTube
+                const thumb = platform === 'tiktok' && video.id
+                    ? `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`
+                    : (video.thumbnail || '');
+                
+                // Format relative time for "Posted X ago"
+                const relativeTime = video.createTime ? formatRelativeTime(video.createTime) : '';
                 
                 return `
                     <a href="/Codes/player.html?type=${platform}&id=${video.id}" class="omari-social-card" data-id="${video.id}">
@@ -1385,6 +1380,7 @@ async function populateOmariSocialGrid() {
                             <div class="omari-social-title">${video.title || 'Video'}</div>
                             <div class="omari-social-meta">
                                 <span class="omari-social-creator">@${video.username || video.creator || 'omari.to'}</span>
+                                ${relativeTime ? `<span class="omari-social-time">${relativeTime}</span>` : ''}
                             </div>
                             <div class="omari-social-stats">
                                 <span class="omari-social-stat"><i class="fa-solid fa-eye"></i> ${formatStat(video.views)}</span>

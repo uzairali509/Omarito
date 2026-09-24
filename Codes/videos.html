@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -340,21 +340,21 @@
     </div>
 
     <nav class="bottom-navbar">
-        <div class="menu-toggle" id="menuToggle">â˜°</div>
+        <div class="menu-toggle" id="menuToggle">☰</div>
         <div class="menu" id="menu">
             <ul class="menu-links" id="mainMenu">
                 <li class="active">Omarito.World</li>
                 <li>Omarito.Wow</li>
                 <li>Omarito.Chef</li>
-                <li id="charactersBtn">Characters â†’</li>
-                <li id="yearBtn">Year â†’</li>
-                <li id="eventBtn">Special Events â†’</li>
-                <li id="emailBtn">Get Email â†’</li>
-                <li id="songsBtn"><i class="fa-solid fa-music"></i> Songs â†’</li>
-                <li id="locationBtn">Get Destination â†’</li>
-                <li id="visitBtn">Visited Places â†’</li>
+                <li id="charactersBtn">Characters →</li>
+                <li id="yearBtn">Year →</li>
+                <li id="eventBtn">Special Events →</li>
+                <li id="emailBtn">Get Email →</li>
+                <li id="songsBtn"><i class="fa-solid fa-music"></i> Songs →</li>
+                <li id="locationBtn">Get Destination →</li>
+                <li id="visitBtn">Visited Places →</li>
                 <a href="/Codes/About.html">
-                    <li>More with us â†’</li>
+                    <li>More with us →</li>
                 </a>
             </ul>
             <div class="social-links">
@@ -386,7 +386,7 @@
     </section>
 
     <div id="connectionStatus" class="status-bar online">
-        ðŸ”´ Offline
+        🔴 Offline
     </div>
 
     <div id="loader">
@@ -440,14 +440,14 @@
         // ==================== CONFIG ====================
         const params = new URLSearchParams(window.location.search);
 
-        // Official playlist ID â†’ display name (for page title)
+        // Official playlist ID → display name (for page title)
         const PLAYLIST_ID_TO_NAME = {
-            "7433667529204828933": "OMARITO.WOWâœˆï¸",
-            "7433396735386405638": "OMARITO.WORLDðŸ‘¨ðŸ»â€ðŸŽ“",
-            "7433392358749653766": "OMARITO.CHEFðŸ§‘ðŸ»â€ðŸ³"
+            "7433667529204828933": "OMARITO.WOW✈️",
+            "7433396735386405638": "OMARITO.WORLD👨🏻‍🎓",
+            "7433392358749653766": "OMARITO.CHEF🧑🏻‍🍳"
         };
 
-        // Legacy name â†’ numeric ID (so old ?playlist=Omarito.World links work)
+        // Legacy name → numeric ID (so old ?playlist=Omarito.World links work)
         const PLAYLIST_NAME_TO_ID = {
             "Omarito.World": "7433396735386405638",
             "Omarito.Wow":   "7433667529204828933",
@@ -481,28 +481,11 @@
 
         // NOTE: API_BASE is declared ONCE in /Codes/script.js (loaded above
         // this inline block) and shared by every page. Do NOT redeclare it
-        // here â€” a second top-level `const API_BASE` throws
+        // here — a second top-level `const API_BASE` throws
         // "Identifier 'API_BASE' has already been declared" and stops ALL
         // JavaScript on the page (grid never initializes).
 
         const API_KEY = "AIzaSyBtqSE00ra7_NoRg3EGuipaq75VIBDsecg";
-
-        // Shared number/duration formatting for premium card stats.
-        // Values always come from the API/DB â€” never generated here.
-        function formatStat(num) {
-            if (num === null || num === undefined) return "0";
-            const n = Number(num);
-            if (isNaN(n)) return "0";
-            if (n < 1000) return n.toString();
-            function clean(val, suffix) {
-                let s = val < 1000 ? val.toFixed(2) : Math.round(val).toString();
-                if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
-                return s + suffix;
-            }
-            if (n < 1000000) return clean(n / 1000, "K");
-            if (n < 1000000000) return clean(n / 1000000, "M");
-            return clean(n / 1000000000, "B");
-        }
 
         function formatDuration(secs) {
             secs = Math.round(Number(secs) || 0);
@@ -595,7 +578,7 @@
             if (grid.children.length > 0) return;
 
 
-            // Extract Video IDs (Shorts links are excluded â€” VIDEOS section shows normal YouTube videos only)
+            // Extract Video IDs (Shorts links are excluded — VIDEOS section shows normal YouTube videos only)
             const videoIds = manualVideos
                 .filter(link => !/\/shorts\//i.test(link))
                 .map(link => {
@@ -613,58 +596,100 @@
 
             // Fetch details from YouTube Data API for thumbnails, titles AND
             // real statistics (views/likes) used by the hover stats overlay
+            function renderYouTubeCards(items) {
+                items.forEach(item => {
+                    // YouTube Shorts exclude karo (60 seconds ya usse chhoti videos Shorts hoti hain)
+                    const totalSeconds = parseISO8601Duration(item.contentDetails && item.contentDetails.duration);
+                    if (totalSeconds !== null && totalSeconds <= 60) return;
+
+                    const videoId = item.id;
+                    const title = item.snippet.title;
+                    const channel = item.snippet.channelTitle || "Omari.to";
+                    const thumb = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.medium.url;
+                    // Actual YouTube values — never fake numbers
+                    const views = Number(item.statistics && item.statistics.viewCount) || 0;
+                    const likes = Number(item.statistics && item.statistics.likeCount) || 0;
+                    const comments = Number(item.statistics && item.statistics.commentCount) || 0;
+
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `
+                        <div class="card-thumb">
+                            <img src="${thumb}" alt="thumbnail" loading="lazy">
+                            ${formatDuration(totalSeconds) ? `<span class="duration-badge">${formatDuration(totalSeconds)}</span>` : ""}
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">${title}</div>
+                            <div class="card-creator">${channel}</div>
+                            <div class="card-stats">
+                                <span>👁 ${formatStat(views)}</span>
+                                <span>❤ ${formatStat(likes)}</span>
+                            </div>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="ov-title">STATISTICS</div>
+                            <div class="ov-row"><span>Views</span><span>${formatStat(views)}</span></div>
+                            <div class="ov-row"><span>Likes</span><span>${formatStat(likes)}</span></div>
+                            <div class="ov-row"><span>Comments</span><span>${comments ? formatStat(comments) : "—"}</span></div>
+                            <div class="ov-row"><span>Duration</span><span>${formatDuration(totalSeconds) || "—"}</span></div>
+                            <div class="ov-play">▶ Watch Now</div>
+                        </div>
+                    `;
+                    // Click -> dedicated player page (exact video by real YouTube id)
+                    card.onclick = () => {
+                        window.location.href = `/Codes/player.html?type=youtube&id=${encodeURIComponent(videoId)}`;
+                    };
+
+                    grid.appendChild(card);
+                });
+            }
+
             fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds.join(',')}&key=${API_KEY}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
                 .then(data => {
-
-                    data.items.forEach(item => {
-                        // YouTube Shorts exclude karo (60 seconds ya usse chhoti videos Shorts hoti hain)
-                        const totalSeconds = parseISO8601Duration(item.contentDetails && item.contentDetails.duration);
-                        if (totalSeconds !== null && totalSeconds <= 60) return;
-
-                        const videoId = item.id;
-                        const title = item.snippet.title;
-                        const channel = item.snippet.channelTitle || "Omari.to";
-                        const thumb = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.medium.url;
-                        // Actual YouTube values â€” never fake numbers
-                        const views = Number(item.statistics && item.statistics.viewCount) || 0;
-                        const likes = Number(item.statistics && item.statistics.likeCount) || 0;
-                        const comments = Number(item.statistics && item.statistics.commentCount) || 0;
-
-                        const card = document.createElement("div");
-                        card.className = "card";
-                        card.innerHTML = `
-                            <div class="card-thumb">
-                                <img src="${thumb}" alt="thumbnail" loading="lazy">
-                                ${formatDuration(totalSeconds) ? `<span class="duration-badge">${formatDuration(totalSeconds)}</span>` : ""}
-                            </div>
-                            <div class="card-body">
-                                <div class="card-title">${title}</div>
-                                <div class="card-creator">${channel}</div>
-                                <div class="card-stats">
-                                    <span>ðŸ‘ ${formatStat(views)}</span>
-                                    <span>â¤ ${formatStat(likes)}</span>
-                                </div>
-                            </div>
-                            <div class="card-overlay">
-                                <div class="ov-title">STATISTICS</div>
-                                <div class="ov-row"><span>Views</span><span>${formatStat(views)}</span></div>
-                                <div class="ov-row"><span>Likes</span><span>${formatStat(likes)}</span></div>
-                                <div class="ov-row"><span>Comments</span><span>${comments ? formatStat(comments) : "â€”"}</span></div>
-                                <div class="ov-row"><span>Duration</span><span>${formatDuration(totalSeconds) || "â€”"}</span></div>
-                                <div class="ov-play">â–¶ Watch Now</div>
-                            </div>
-                        `;
-                        // Click -> dedicated player page (exact video by real YouTube id)
-                        card.onclick = () => {
-                            window.location.href = `/Codes/player.html?type=youtube&id=${encodeURIComponent(videoId)}`;
-                        };
-
-                        grid.appendChild(card);
-                    });
+                    if (data.items && data.items.length > 0) {
+                        renderYouTubeCards(data.items);
+                    } else {
+                        throw new Error("No items returned from YouTube API");
+                    }
                 })
                 .catch(err => {
-                    console.error(err);
+                    console.error("YouTube Data API failed, falling back to backend:", err);
+                    // Fallback to backend /youtube-videos endpoint
+                    fetch(`${API_BASE}/youtube-videos?type=videos&page=1&limit=50`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.videos && data.videos.length > 0) {
+                                // Convert backend format to YouTube API format for renderYouTubeCards
+                                const items = data.videos.map(v => ({
+                                    id: v.id,
+                                    snippet: {
+                                        title: v.title,
+                                        channelTitle: v.creator || v.username || "Omari.to",
+                                        thumbnails: {
+                                            high: { url: v.thumbnail },
+                                            medium: { url: v.thumbnail }
+                                        }
+                                    },
+                                    contentDetails: { duration: v.duration ? `PT${v.duration}S` : "" },
+                                    statistics: {
+                                        viewCount: v.views || 0,
+                                        likeCount: v.likes || 0,
+                                        commentCount: v.comments || 0
+                                    }
+                                }));
+                                renderYouTubeCards(items);
+                            } else {
+                                grid.innerHTML = '<div class="loader">Unable to load YouTube videos. Please try again later.</div>';
+                            }
+                        })
+                        .catch(err2 => {
+                            console.error("Backend YouTube API also failed:", err2);
+                            grid.innerHTML = '<div class="loader">Unable to load YouTube videos. Please try again later.</div>';
+                        });
                 });
         }
 
@@ -681,8 +706,9 @@
 
         function buildShortsCard(video) {
             // Skip audio-only / photo-mode TikTok posts (no playable video)
-            // Audio-only posts have duration=0, empty playUrl, photo-mode thumbnails, or mime_type=audio_mp4
-            const isAudioOnly = !video.duration || video.duration === 0 || !video.playUrl || (video.thumbnail && video.thumbnail.includes('photomode-image')) || (video.playUrl && video.playUrl.includes('mime_type=audio_mp4'));
+            // Actual audio-only posts have duration=0, photo-mode thumbnails, or mime_type=audio_mp4 in playUrl
+            // Empty playUrl is OK - it will be fetched on-demand via /tiktok-play when user clicks
+            const isAudioOnly = !video.duration || video.duration === 0 || (video.thumbnail && video.thumbnail.includes('photomode-image')) || (video.playUrl && video.playUrl.includes('mime_type=audio_mp4'));
             if (isAudioOnly) {
                 console.log('[Filter] Skipping audio-only/photo-mode video:', video.id);
                 return null;
@@ -705,7 +731,7 @@
             //    (forces tikwm refresh)  3) alternate proxy without retry
             //    4) local placeholder
             img.onerror = () => {
-                console.log('[Thumbnail] Image failed for video:', video.id, 'dataset.fb1:', img.dataset.fb1);
+                console.log('[Thumbnail] Image failed for video:', video.id, 'attempt:', img.dataset.fbAttempt || 1);
                 
                 if (!img.dataset.fb1) {
                     img.dataset.fb1 = "1";
@@ -722,14 +748,10 @@
                 }
             };
 
-            // Signed TikTok CDN URLs expire (x-expires). Skip the direct
-            // URL entirely when it is already expired so no 403 request
-            // is fired; the backend proxy returns a fresh/valid image.
-            const exp = String(video.thumbnail || "").match(/x-expires=(\d+)/);
-            const thumbExpired = exp && (+exp[1] * 1000) < Date.now();
-            img.src = (video.thumbnail && !thumbExpired)
-                ? video.thumbnail
-                : `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`;
+            // Use backend proxy as primary source for ALL TikTok thumbnails.
+            // Direct CDN URLs are IP-bound, signed, and may fail for end users.
+            // The proxy fetches a fresh signed URL on each request.
+            img.src = `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`;
 
             thumbWrap.appendChild(img);
 
@@ -756,16 +778,16 @@
             const stats = document.createElement("div");
             stats.className = "card-stats";
             stats.innerHTML = `
-                <span>ðŸ‘ ${formatStat(video.views)}</span>
-                <span>â¤ ${formatStat(video.likes)}</span>
-                <span>ðŸ’¬ ${formatStat(video.comments)}</span>
+                <span>👁 ${formatStat(video.views)}</span>
+                <span>❤ ${formatStat(video.likes)}</span>
+                <span>💬 ${formatStat(video.comments)}</span>
             `;
 
             body.appendChild(title);
             body.appendChild(creator);
             body.appendChild(stats);
 
-            // Hover stats overlay â€” actual stored TikTok values only
+            // Hover stats overlay — actual stored TikTok values only
             const overlay = document.createElement("div");
             overlay.className = "card-overlay";
             overlay.innerHTML = `
@@ -773,9 +795,9 @@
                 <div class="ov-row"><span>Views</span><span>${formatStat(video.views)}</span></div>
                 <div class="ov-row"><span>Likes</span><span>${formatStat(video.likes)}</span></div>
                 <div class="ov-row"><span>Comments</span><span>${formatStat(video.comments)}</span></div>
-                <div class="ov-row"><span>Shares</span><span>${video.shares ? formatStat(video.shares) : "â€”"}</span></div>
-                <div class="ov-row"><span>Duration</span><span>${formatDuration(video.duration) || "â€”"}</span></div>
-                <div class="ov-play">â–¶ Watch Now</div>
+                <div class="ov-row"><span>Shares</span><span>${video.shares ? formatStat(video.shares) : "—"}</span></div>
+                <div class="ov-row"><span>Duration</span><span>${formatDuration(video.duration) || "—"}</span></div>
+                <div class="ov-play">▶ Watch Now</div>
             `;
 
             card.appendChild(thumbWrap);
@@ -917,3 +939,4 @@
 </body>
 
 </html>
+

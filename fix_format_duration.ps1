@@ -1,0 +1,6 @@
+$content = Get-Content "F:\TikTok Web\Codes\script.js" -Raw
+$old = '// ===== MENU TOGGLE LOGIC =====' + [Environment]::NewLine + 'const toggle = document.getElementById("menuToggle");'
+$new = '// ===== DURATION FORMATTING =====' + [Environment]::NewLine + 'function formatDuration(secs) {' + [Environment]::NewLine + '    secs = Math.round(Number(secs) || 0);' + [Environment]::NewLine + '    if (!secs) return "";' + [Environment]::NewLine + '    const h = Math.floor(secs / 3600);' + [Environment]::NewLine + '    const m = Math.floor((secs % 3600) / 60);' + [Environment]::NewLine + '    const s = secs % 60;' + [Environment]::NewLine + '    return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`' + [Environment]::NewLine + '        : `${m}:${String(s).padStart(2, "0")}`;' + [Environment]::NewLine + '}' + [Environment]::NewLine + [Environment]::NewLine + '// ===== MENU TOGGLE LOGIC =====' + [Environment]::NewLine + 'const toggle = document.getElementById("menuToggle");'
+$content = $content -replace [regex]::Escape($old), $new
+Set-Content "F:\TikTok Web\Codes\script.js" $newContent
+"Done"

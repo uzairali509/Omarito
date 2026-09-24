@@ -949,4 +949,41 @@ router.get("/notifications", async (req, res) => {
     }
 });
 
+// =======================
+// GET /latest-videos
+// Returns latest 10 videos (TikTok + YouTube combined) for About page
+// =======================
+router.get("/latest-videos", async (req, res) => {
+    try {
+        const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
+        
+        const tiktokMatch = {
+            isActive: true,
+            platform: "tiktok",
+            $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
+        };
+        
+        const youtubeMatch = {
+            isActive: true,
+            platform: "youtube"
+        };
+        
+        const [tiktokDocs, youtubeDocs] = await Promise.all([
+            Video.find(tiktokMatch).sort({ createTime: -1 }).limit(limit).lean(),
+            Video.find(youtubeMatch).sort({ createTime: -1 }).limit(limit).lean()
+        ]);
+        
+        const allDocs = [...tiktokDocs, ...youtubeDocs]
+            .sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
+            .slice(0, limit);
+        
+        const videos = allDocs.map(mapVideoDoc);
+        
+        res.json({ success: true, videos });
+    } catch (err) {
+        console.error("GET /latest-videos error:", err);
+        res.status(500).json({ success: false, error: "Failed to fetch latest videos" });
+    }
+});
+
 module.exports = router;
