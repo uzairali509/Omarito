@@ -5,7 +5,7 @@ const axios = require("axios");
 const Video = require("../models/Video");
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyBtqSE00ra7_NoRg3EGuipaq75VIBDsecg";
-const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UCeVMnSShP_Iviwkknt83cww";
+const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UChwXC2xSe5hAhIwDV8suK-w";
 
 const YOUTUBE_SHORTS_MAX_DURATION = 60;
 

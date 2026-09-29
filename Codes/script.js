@@ -2,6 +2,7 @@
 // Served by the Express backend (port 3000) -> same-origin relative URLs.
 // Opened via Live Server / other static host -> point at the local backend.
 const API_BASE = (window.location.port === "3000") ? "" : "http://localhost:3000";
+window.API_BASE = API_BASE;
 
 // ===== NUMBER FORMATTING (K/M/B) =====
 // Always shows up to 2 significant decimal places, strips trailing zeros.
@@ -22,6 +23,7 @@ function formatStat(num) {
     if (n < 1000000000) return clean(n / 1000000, "M");
     return clean(n / 1000000000, "B");
 }
+window.formatStat = formatStat;
 // ===== DURATION FORMATTING =====
 function formatDuration(secs) {
     secs = Math.round(Number(secs) || 0);
@@ -32,6 +34,7 @@ function formatDuration(secs) {
     return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0')
         : m + ':' + String(s).padStart(2, '0');
 }
+window.formatDuration = formatDuration;
 
 
 // ===== MENU TOGGLE LOGIC =====
@@ -77,6 +80,7 @@ function formatRelativeTime(dateString) {
     if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     return date.toLocaleDateString();
 }
+window.formatRelativeTime = formatRelativeTime;
 
 // Fetch notifications for logged-in user
 async function fetchNotifications() {
@@ -223,7 +227,9 @@ async function checkAuthState() {
             updateAuthUI();
             return;
         }
-        const data = await res.json();
+        const text = await res.text();
+        if (!text) { currentUser = null; updateAuthUI(); return; }
+        const data = JSON.parse(text);
         if (data.success) {
             currentUser = data.user;
         } else {
@@ -272,25 +278,28 @@ setInterval(() => {
 }, 300000);
 
 // ===== ELECTRIC CURSOR LOGIC =====
-const cursor = document.querySelector(".electric-cursor");
-const canvas = document.getElementById("lightningCanvas");
-const ctx = canvas ? canvas.getContext("2d") : null;
+function initElectricCursor() {
+    const cursor = document.querySelector(".electric-cursor");
+    const canvas = document.getElementById("lightningCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
 
-if (ctx) {
+    if (!cursor || !canvas || !ctx) {
+        console.warn('[Electric Cursor] Elements not found:', { cursor: !!cursor, canvas: !!canvas, ctx: !!ctx });
+        return;
+    }
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-}
-let mouse = { x: 0, y: 0 };
-let particles = [];
+    let mouse = { x: 0, y: 0 };
+    let particles = [];
 
-if (cursor && canvas) {
     document.addEventListener("mousemove", (e) => {
         mouse.x = e.clientX; mouse.y = e.clientY;
         cursor.style.left = mouse.x + "px"; cursor.style.top = mouse.y + "px";
         createParticle(mouse.x, mouse.y);
     });
 
-    // âœ… Lightbox ke andar bhi cursor track kare
+    // Lightbox ke andar bhi cursor track kare
     const lightboxOverlay = document.getElementById('lightboxOverlay');
     if (lightboxOverlay) {
         lightboxOverlay.addEventListener("mousemove", (e) => {
@@ -299,34 +308,38 @@ if (cursor && canvas) {
             cursor.style.top = mouse.y + "px";
         });
     }
-}
 
-function createParticle(x, y) {
-    particles.push({ x, y, size: Math.random() * 4 + 1, speedX: (Math.random() - 0.5) * 4, speedY: (Math.random() - 0.5) * 4, life: 30 });
-}
-
-function animate() {
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < particles.length; i++) {
-        let p = particles[i];
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,159,28," + p.life / 30 + ")"; ctx.fill();
-        p.x += p.speedX; p.y += p.speedY; p.life--;
-        if (p.life <= 0) { particles.splice(i, 1); i--; }
+    function createParticle(x, y) {
+        particles.push({ x, y, size: Math.random() * 4 + 1, speedX: (Math.random() - 0.5) * 4, speedY: (Math.random() - 0.5) * 4, life: 30 });
     }
-    requestAnimationFrame(animate);
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < particles.length; i++) {
+            let p = particles[i];
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,159,28," + p.life / 30 + ")"; ctx.fill();
+            p.x += p.speedX; p.y += p.speedY; p.life--;
+            if (p.life <= 0) { particles.splice(i, 1); i--; }
+        }
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+    document.querySelectorAll("a, button, li").forEach(el => {
+        el.addEventListener("mouseenter", () => { cursor.style.boxShadow = "0 0 20px #FF9F1C, 0 0 40px #FF9F1C, 0 0 60px #F4C430"; cursor.style.transform = "translate(-50%, -50%) scale(1.5)"; });
+        el.addEventListener("mouseleave", () => { cursor.style.boxShadow = "0 0 10px #FF9F1C, 0 0 20px #FF9F1C, 0 0 40px #F4C430"; cursor.style.transform = "translate(-50%, -50%) scale(1)"; });
+    });
 }
-animate();
 
-window.addEventListener("resize", () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } });
-
-document.querySelectorAll("a, button, li").forEach(el => {
-    el.addEventListener("mouseenter", () => { if (cursor) { cursor.style.boxShadow = "0 0 20px #FF9F1C, 0 0 40px #FF9F1C, 0 0 60px #F4C430"; cursor.style.transform = "translate(-50%, -50%) scale(1.5)"; } });
-    el.addEventListener("mouseleave", () => { if (cursor) { cursor.style.boxShadow = "0 0 10px #FF9F1C, 0 0 20px #FF9F1C, 0 0 40px #F4C430"; cursor.style.transform = "translate(-50%, -50%) scale(1)"; } });
-});
-
-// ===== MENU SLIDES LOGIC =====
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initElectricCursor);
+} else {
+    initElectricCursor();
+}// ===== MENU SLIDES LOGIC =====
 const mainMenu = document.getElementById("mainMenu");
 let originalMenu = mainMenu ? mainMenu.innerHTML : "";
 
@@ -383,6 +396,17 @@ function attachMenuEvents() {
         });
     }
 
+    // Characters menu
+    if (charactersBtn) {
+        charactersBtn.addEventListener("click", () => {
+            openSubmenu([
+                `<span onclick="openCharacter('omar')">Omar</span>`,
+                `<span onclick="openCharacter('dylan')">Dylan</span>`,
+                `<span onclick="openCharacter('sufiya')">Sufiya</span>`
+            ]);
+        });
+    }
+
     // Songs menu
     let songsOpen = false;
     const songsBtn = document.getElementById("songsBtn");
@@ -431,17 +455,6 @@ function openCharacter(character) {
 
     // Redirect to videos.html with creator filter parameter
     window.location.href = `/Codes/videos.html?creator=${creators[character]}`;
-}
-
-// Update the charactersBtn click handler in your existing code
-if (charactersBtn) {
-    charactersBtn.addEventListener("click", () => {
-        openSubmenu([
-            `<span onclick="openCharacter('omar')">Omar</span>`,
-            `<span onclick="openCharacter('dylan')">Dylan</span>`,
-            `<span onclick="openCharacter('sufiya')">Sufiya</span>`
-        ]);
-    });
 }
 
 // ===== ðŸ”¥ PROFILE PANEL TOGGLE & DATA FETCHING =====
@@ -560,7 +573,9 @@ async function getUser() {
     try {
         const res = await fetch(API_BASE + "/user", { method: "GET", credentials: "include" });
         if (res.status === 401) return;
-        const data = await res.json();
+        const text = await res.text();
+        if (!text) return;
+        const data = JSON.parse(text);
 
         if (data.success) {
             const user = data.user;
@@ -669,8 +684,10 @@ updateConnectionStatus();
 
 window.addEventListener("load", () => {
     const loader = document.getElementById("loader");
-    loader.classList.add("hidden");
-    setTimeout(() => loader.remove(), 200);
+    if (loader) {
+        loader.classList.add("hidden");
+        setTimeout(() => loader.remove(), 200);
+    }
 });
 
 
@@ -688,12 +705,14 @@ async function loadRanking() {
             if (asiaEl) asiaEl.innerText = data.rankings.asia !== null ? "#" + data.rankings.asia : "Rank unavailable";
             if (worldEl) worldEl.innerText = data.rankings.world !== null ? "#" + data.rankings.world : "Rank unavailable";
             if (kzEl) kzEl.innerText = data.rankings.kazakhstan !== null ? "#" + data.rankings.kazakhstan : "Rank unavailable";
+            if (data.lastUpdated) console.log('[Rankings] Last updated:', data.lastUpdated);
         } else {
-            // No valid data - show API message if available, otherwise "Rank unavailable"
-            const message = data.message || "Rank unavailable";
-            if (asiaEl) asiaEl.innerText = message;
-            if (worldEl) worldEl.innerText = message;
-            if (kzEl) kzEl.innerText = message;
+            // No valid data from real provider - show concise "Rank unavailable"
+            // (Full message logged to console for debugging)
+            if (data.message) console.log('[Rankings]', data.message);
+            if (asiaEl) asiaEl.innerText = "Rank unavailable";
+            if (worldEl) worldEl.innerText = "Rank unavailable";
+            if (kzEl) kzEl.innerText = "Rank unavailable";
         }
 
     } catch (error) {
@@ -942,12 +961,13 @@ function filterLegends(category, btn) {
 async function checkTokenAndShowMessage() {
     try {
         const res = await fetch(API_BASE + "/user", { method: "GET", credentials: "include" });
-        if (res.status === 200) {
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById("messageSection").style.display = "block";
-                loadCountries(); // âœ… User login hai, countries load karo
-            }
+        if (res.status !== 200) return;
+        const text = await res.text();
+        if (!text) return;
+        const data = JSON.parse(text);
+        if (data.success) {
+            document.getElementById("messageSection").style.display = "block";
+            loadCountries(); // ✅ User login hai, countries load karo
         }
     } catch (err) {
         console.log("User not logged in, Message section hidden");
@@ -1346,64 +1366,264 @@ function stopConfetti() {
     }
 }
 
-// Populate Omari social grid on About page - Latest 10 videos (TikTok + YouTube)
+function getCardsPerView() {
+    if (window.innerWidth <= 480) return 1;
+    if (window.innerWidth <= 768) return 2;
+    if (window.innerWidth <= 1024) return 4;
+    return 5;
+}
+
+// Populate Omari social carousel on About page - Latest 10 videos (TikTok + YouTube)
 async function populateOmariSocialGrid() {
-    const grid = document.getElementById('omariSocialGrid');
-    if (!grid) return; // Not on About page
+    console.log('[Omari Social] populateOmariSocialGrid called');
+    const track = document.getElementById('omariSocialGrid');
+    if (!track) { console.log('[Omari Social] Track not found'); return; } // Not on About page
+    
+    // Ensure track has correct carousel track classes
+    track.classList.add('omari-carousel-track');
+    track.style.display = 'flex';
+    track.style.gap = '16px';
+    track.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    track.style.willChange = 'transform';
+    
+    const carousel = track.closest('.omari-carousel');
+    console.log('[Omari Social] Track found:', !!track, 'Carousel found:', !!carousel);
+    if (!carousel) { console.error('[Omari Social] Carousel structure not found'); return; }
+    
+    const prevBtn = carousel.querySelector('.omari-carousel-nav.prev');
+    const nextBtn = carousel.querySelector('.omari-carousel-nav.next');
+    const dotsContainer = carousel.querySelector('.omari-carousel-dots');
+    console.log('[Omari Social] Prev btn:', !!prevBtn, 'Next btn:', !!nextBtn, 'Dots:', !!dotsContainer);
     
     try {
         // Fetch latest 10 videos (TikTok + YouTube combined) from new endpoint
         const res = await fetch(`${API_BASE}/latest-videos?limit=10`);
         const data = await res.json();
         
-        if (data.success && data.videos && data.videos.length > 0) {
-            grid.innerHTML = data.videos.map(video => {
-                const platform = video.platform || 'tiktok';
-                const platformBadge = platform === 'youtube' ? 'youtube' : 'tiktok';
-                const duration = video.duration ? formatDuration(video.duration) : '';
-                // Use backend proxy for TikTok thumbnails (fresh signed URLs), direct for YouTube
-                const thumb = platform === 'tiktok' && video.id
-                    ? `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`
-                    : (video.thumbnail || '');
-                
-                // Format relative time for "Posted X ago"
-                const relativeTime = video.createTime ? formatRelativeTime(video.createTime) : '';
-                
-                return `
-                    <a href="/Codes/player.html?type=${platform}&id=${video.id}" class="omari-social-card" data-id="${video.id}">
-                        <div class="omari-social-thumb">
-                            <img src="${thumb}" alt="${video.title || 'Video'}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"360\" height=\"202\"><rect fill=\"%23222\" width=\"100%\" height=\"100%\"/></svg>'">
-                            ${duration ? `<span class="duration">${duration}</span>` : ''}
-                            <span class="platform-badge ${platformBadge}">${platformBadge.toUpperCase()}</span>
-                        </div>
-                        <div class="omari-social-body">
-                            <div class="omari-social-title">${video.title || 'Video'}</div>
-                            <div class="omari-social-meta">
-                                <span class="omari-social-creator">@${video.username || video.creator || 'omari.to'}</span>
-                                ${relativeTime ? `<span class="omari-social-time">${relativeTime}</span>` : ''}
-                            </div>
-                            <div class="omari-social-stats">
-                                <span class="omari-social-stat"><i class="fa-solid fa-eye"></i> ${formatStat(video.views)}</span>
-                                <span class="omari-social-stat"><i class="fa-solid fa-heart"></i> ${formatStat(video.likes)}</span>
-                            </div>
-                        </div>
-                    </a>
-                `;
-            }).join('');
-        } else {
-            grid.innerHTML = '<div class="omari-social-empty">No videos available</div>';
+        if (!data.success || !data.videos || data.videos.length === 0) {
+            track.innerHTML = '<div class="omari-social-empty" style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #888; font-size: 16px;">No videos available</div>';
+            return;
         }
+        
+// Render cards
+        track.innerHTML = data.videos.map((video, index) => {
+            const platform = video.platform || 'tiktok';
+            const platformBadge = platform === 'youtube' ? 'youtube' : 'tiktok';
+            const duration = video.duration ? formatDuration(video.duration) : '';
+            // Use backend proxy for TikTok thumbnails (fresh signed URLs), direct for YouTube
+            const thumb = platform === 'tiktok' && video.id
+                ? `${API_BASE}/tiktok-thumbnail?id=${encodeURIComponent(video.id)}`
+                : (video.thumbnail || '');
+            
+            // Format relative time for "Posted X ago"
+            const relativeTime = video.createTime ? formatRelativeTime(video.createTime) : '';
+            
+            return `
+                <a href="/Codes/player.html?type=${platform}&id=${video.id}" class="omari-carousel-card" data-id="${video.id}" data-index="${index}">
+                    <div class="omari-carousel-thumb">
+                        <img src="${thumb}" alt="${video.title || 'Video'}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"360\\" height=\\"202\\"><rect fill=\\"%23222\\" width=\\"100%\\" height=\\"100%\\"/></svg>'">
+                        ${duration ? `<span class="duration">${duration}</span>` : ''}
+                        <span class="platform-badge ${platformBadge}">${platformBadge.toUpperCase()}</span>
+                    </div>
+                    <div class="omari-carousel-body">
+                        <div class="omari-carousel-title">${video.title || 'Video'}</div>
+                        <div class="omari-carousel-meta">
+                            <span class="omari-carousel-creator">@${video.username || video.creator || 'omari.to'}</span>
+                            ${relativeTime ? `<span class="omari-carousel-time">${relativeTime}</span>` : ''}
+                        </div>
+                        <div class="omari-carousel-stats">
+                            <span class="omari-carousel-stat"><i class="fa-solid fa-eye"></i> ${formatStat(video.views)}</span>
+                            <span class="omari-carousel-stat"><i class="fa-solid fa-heart"></i> ${formatStat(video.likes)}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
+        
+        // Create dots
+        const totalPages = Math.max(1, data.videos.length - getCardsPerView() + 1);
+        dotsContainer.innerHTML = Array.from({ length: totalPages }, (_, i) => 
+            `<button class="omari-carousel-dot ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="Go to page ${i + 1}"></button>`
+        ).join('');
+        
+// Carousel navigation logic
+        let currentIndex = 0;
+        const maxIndex = Math.max(0, data.videos.length - getCardsPerView());
+        
+        function updateCarousel() {
+            const firstCard = track.querySelector('.omari-carousel-card');
+            if (!firstCard) return;
+            
+            const cardWidth = firstCard.offsetWidth + 16; // card + gap
+            track.style.transform = `translateX(-${currentIndex * cardWidth}px)`;
+            
+            // Update dots
+            document.querySelectorAll('.omari-carousel-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentIndex);
+            });
+            
+            // Update button states
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex >= maxIndex;
+        }
+        
+        function goToSlide(index) {
+            currentIndex = Math.max(0, Math.min(index, maxIndex));
+            updateCarousel();
+        }
+        
+        function nextSlide() {
+            if (currentIndex < maxIndex) {
+                goToSlide(currentIndex + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentIndex > 0) {
+                goToSlide(currentIndex - 1);
+            }
+        }
+        
+        // Event listeners
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
+        
+        // Dot navigation
+        dotsContainer.addEventListener('click', (e) => {
+            const dot = e.target.closest('.omari-carousel-dot');
+            if (dot) goToSlide(parseInt(dot.dataset.index));
+        });
+        
+// Keyboard navigation
+        carousel.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') prevSlide();
+            else if (e.key === 'ArrowRight') nextSlide();
+        });
+        
+        // Mouse drag support (desktop)
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragCurrentX = 0;
+        let dragStartIndex = 0;
+        
+        carousel.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return; // Only left click
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragCurrentX = e.clientX;
+            dragStartIndex = currentIndex;
+            carousel.style.cursor = 'grabbing';
+            carousel.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            dragCurrentX = e.clientX;
+            const diff = dragStartX - dragCurrentX;
+            const firstCard = track.querySelector('.omari-carousel-card');
+            if (firstCard) {
+                const cardWidth = firstCard.offsetWidth + 16;
+                const dragOffset = -(dragStartIndex * cardWidth + diff);
+                track.style.transition = 'none';
+                track.style.transform = `translateX(${dragOffset}px)`;
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            carousel.style.cursor = 'grab';
+            carousel.style.userSelect = '';
+            track.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            
+            const diff = dragStartX - dragCurrentX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) nextSlide();
+                else prevSlide();
+            } else {
+                // Snap back to current position
+                updateCarousel();
+            }
+        });
+        
+        // Touch/swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        carousel.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        
+        carousel.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) nextSlide();
+                else prevSlide();
+            }
+        }, { passive: true });
+        
+// Handle resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const newMaxIndex = Math.max(0, data.videos.length - getCardsPerView());
+                if (currentIndex > newMaxIndex) currentIndex = newMaxIndex;
+                updateCarousel();
+            }, 100);
+        });
+        
+        // Initial update
+        updateCarousel();
+        
     } catch (err) {
         console.error('[Omari Social] Failed to load:', err);
-        grid.innerHTML = '<div class="omari-social-empty">Failed to load videos</div>';
+        track.innerHTML = '<div class="omari-social-empty" style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #888; font-size: 16px;">Failed to load videos</div>';
     }
 }
 
-// Initialize on page load
+// Initialize on page load - only on About page
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', populateOmariSocialGrid);
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.getElementById('omariSocialGrid')) {
+            populateOmariSocialGrid();
+            startCarouselAutoRefresh();
+        }
+    });
 } else {
-    populateOmariSocialGrid();
+    if (document.getElementById('omariSocialGrid')) {
+        populateOmariSocialGrid();
+        startCarouselAutoRefresh();
+    }
+}
+
+// Auto-refresh carousel every 60 seconds
+function startCarouselAutoRefresh() {
+    if (window._carouselRefreshInterval) return; // Already started
+    
+    window._carouselRefreshInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API_BASE}/latest-videos?limit=10`);
+            const data = await res.json();
+            
+            if (data.success && data.videos && data.videos.length > 0) {
+                // Check if videos have changed (compare first video ID)
+                const track = document.getElementById('omariSocialGrid');
+                const firstCard = track?.querySelector('.omari-carousel-card');
+                const currentFirstId = firstCard?.dataset?.id;
+                const newFirstId = data.videos[0]?.id;
+                
+                if (currentFirstId !== newFirstId) {
+                    console.log('[Omari Social] New videos detected, refreshing carousel...');
+                    populateOmariSocialGrid();
+                }
+            }
+        } catch (err) {
+            console.log('[Omari Social] Auto-refresh check failed:', err.message);
+        }
+    }, 60000); // Check every 60 seconds
 }
 
 // Check auth state for notifications

@@ -3296,7 +3296,7 @@ select {
     }
 }
 
-/* ===== OMARI.TO CUSTOM SOCIAL SECTION ===== */
+/* ===== OMARI.TO CUSTOM SOCIAL SECTION (CAROUSEL) ===== */
 .omari-social-section {
     padding: 60px 8%;
     background: linear-gradient(180deg, rgba(255, 159, 28, 0.03) 0%, transparent 100%);
@@ -3324,17 +3324,32 @@ select {
     font-weight: 300;
 }
 
-.omari-social-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin-bottom: 40px;
+/* Carousel container */
+.omari-carousel {
+    position: relative;
     max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto 40px;
+    /* overflow: hidden removed - allows nav buttons to show outside track */
+    cursor: grab;
 }
 
-.omari-social-card {
+.omari-carousel:active {
+    cursor: grabbing;
+}
+
+/* Carousel track - horizontal scrolling */
+.omari-carousel-track {
+    display: flex;
+    gap: 16px;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+}
+
+/* Individual cards in carousel */
+.omari-carousel-card {
+    flex: 0 0 calc((100% - 64px) / 5); /* 5 cards visible, 4 gaps of 16px = 64px */
+    min-width: 220px;
+    max-width: 300px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
@@ -3343,33 +3358,54 @@ select {
     cursor: pointer;
     display: flex;
     flex-direction: column;
+    background: linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(20, 20, 20, 0.9));
+    border: 1px solid rgba(255, 159, 28, 0.1);
 }
 
-.omari-social-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(212, 191, 134, 0.3);
-    box-shadow: 0 12px 30px rgba(212, 191, 134, 0.15);
-    background: rgba(255, 255, 255, 0.05);
+/* Responsive card widths matching getCardsPerView() */
+@media (max-width: 1024px) {
+    .omari-carousel-card {
+        flex: 0 0 calc((100% - 48px) / 4); /* 4 cards, 3 gaps */
+    }
 }
 
-.omari-social-thumb {
+@media (max-width: 768px) {
+    .omari-carousel-card {
+        flex: 0 0 calc((100% - 16px) / 2); /* 2 cards, 1 gap */
+    }
+}
+
+@media (max-width: 480px) {
+    .omari-carousel-card {
+        flex: 0 0 100%; /* 1 card */
+    }
+}
+
+.omari-carousel-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: rgba(255, 159, 28, 0.3);
+    box-shadow: 0 14px 35px rgba(255, 159, 28, 0.25);
+    z-index: 10;
+}
+
+.omari-carousel-thumb {
     position: relative;
     aspect-ratio: 16/9;
     overflow: hidden;
 }
 
-.omari-social-thumb img {
+.omari-carousel-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.4s ease;
 }
 
-.omari-social-card:hover .omari-social-thumb img {
-    transform: scale(1.05);
+.omari-carousel-card:hover .omari-carousel-thumb img {
+    transform: scale(1.07);
 }
 
-.omari-social-thumb .duration {
+.omari-carousel-thumb .duration {
     position: absolute;
     bottom: 8px;
     right: 8px;
@@ -3381,7 +3417,7 @@ select {
     font-weight: 500;
 }
 
-.omari-social-thumb .platform-badge {
+.omari-carousel-thumb .platform-badge {
     position: absolute;
     top: 8px;
     left: 8px;
@@ -3392,24 +3428,24 @@ select {
     text-transform: uppercase;
 }
 
-.omari-social-thumb .platform-badge.tiktok {
+.omari-carousel-thumb .platform-badge.tiktok {
     background: rgba(255, 159, 28, 0.9);
     color: #000;
 }
 
-.omari-social-thumb .platform-badge.youtube {
+.omari-carousel-thumb .platform-badge.youtube {
     background: rgba(255, 0, 0, 0.9);
     color: #fff;
 }
 
-.omari-social-body {
+.omari-carousel-body {
     padding: 14px 16px;
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
-.omari-social-title {
+.omari-carousel-title {
     font-size: 14px;
     font-weight: 500;
     color: #f2f2f2;
@@ -3421,7 +3457,7 @@ select {
     line-height: 1.4;
 }
 
-.omari-social-meta {
+.omari-carousel-meta {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -3429,12 +3465,18 @@ select {
     font-size: 12px;
 }
 
-.omari-social-creator {
+.omari-carousel-creator {
     color: var(--primary);
     font-weight: 600;
 }
 
-.omari-social-stats {
+.omari-carousel-time {
+    color: #888;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.omari-carousel-stats {
     display: flex;
     gap: 12px;
     color: #888;
@@ -3442,18 +3484,94 @@ select {
     margin-top: auto;
 }
 
-.omari-social-stat {
+.omari-carousel-stat {
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
+/* Navigation arrows */
+.omari-carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(20, 20, 20, 0.95));
+    border: 1px solid rgba(255, 159, 28, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 20;
+    color: var(--primary);
+    font-size: 20px;
+    opacity: 0.8;
+    backdrop-filter: blur(10px);
+}
+
+.omari-carousel-nav:hover {
+    background: linear-gradient(145deg, rgba(212, 191, 134, 0.2), rgba(212, 191, 134, 0.1));
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 8px 25px rgba(255, 159, 28, 0.3);
+}
+
+.omari-carousel-nav.prev {
+    left: -64px;
+}
+
+.omari-carousel-nav.next {
+    right: -64px;
+}
+
+.omari-carousel-nav:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212, 191, 134, 0.4);
+}
+
+/* Carousel dots indicator */
+.omari-carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+    padding: 0 20px;
+}
+
+.omari-carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.omari-carousel-dot.active {
+    background: var(--primary);
+    transform: scale(1.3);
+    box-shadow: 0 0 12px var(--primary);
+}
+
+.omari-carousel-dot:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.2);
+}
+
+/* Footer links */
 .omari-social-footer {
     text-align: center;
     display: flex;
     justify-content: center;
     gap: 16px;
     flex-wrap: wrap;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 159, 28, 0.1);
 }
 
 .omari-social-link {
@@ -3488,6 +3606,102 @@ select {
     background: var(--primary);
     color: #000;
     box-shadow: 0 8px 25px rgba(255, 159, 28, 0.4);
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+    .omari-carousel-card {
+        flex: 0 0 calc((100% - 48px) / 4); /* 4 cards visible */
+    }
+    
+    .omari-carousel-nav.prev {
+        left: -54px;
+    }
+    
+    .omari-carousel-nav.next {
+        right: -54px;
+    }
+}
+
+@media (max-width: 768px) {
+    .omari-social-section {
+        padding: 40px 4%;
+    }
+    
+    .omari-social-header h2 {
+        font-size: 28px;
+    }
+    
+    .omari-carousel-card {
+        flex: 0 0 calc((100% - 16px) / 2); /* 2 cards visible */
+        min-width: 260px;
+    }
+    
+    .omari-carousel-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .omari-carousel-nav.prev {
+        left: -48px;
+    }
+    
+    .omari-carousel-nav.next {
+        right: -48px;
+    }
+    
+    .omari-social-footer {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .omari-social-link {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .omari-carousel-card {
+        flex: 0 0 calc(100% - 16px); /* 1 card visible with peek */
+        min-width: 280px;
+    }
+    
+    .omari-carousel-nav.prev {
+        left: -44px;
+    }
+    
+    .omari-carousel-nav.next {
+        right: -44px;
+    }
+}
+
+/* Empty state */
+.omari-social-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+    font-size: 16px;
+}
+
+/* Loading state */
+.omari-carousel-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    color: var(--primary);
+    font-size: 16px;
+}
+
+.omari-social-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+    font-size: 16px;
 }
 
 @media (max-width: 768px) {

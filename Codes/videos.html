@@ -413,10 +413,16 @@
         </div>
 
         <div class="video-section" id="shortsSection" style="display: none;">
-            <div class="row-title">TikTok Shorts</div>
+            <div class="row-title">
+                TikTok Shorts
+                <button id="refreshShortsBtn" class="refresh-btn" onclick="triggerTikTokSync()" style="margin-left: 15px; padding: 8px 16px; background: #FF9F1C; border: none; border-radius: 20px; color: #000; font-weight: 600; cursor: pointer; font-size: 14px;">
+                    <i class="fa-solid fa-sync"></i> Refresh
+                </button>
+            </div>
             <div id="shortsGrid" class="shorts-grid"></div>
             <div id="scrollSentinel" style="height: 1px; margin: 20px 0;"></div>
             <div id="shortsLoader" class="loader">Loading TikTok Videos...</div>
+            <button id="loadMoreBtn" class="load-more-btn" style="display: none; margin: 20px auto; padding: 12px 30px; background: #FF9F1C; border: none; border-radius: 25px; color: #000; font-weight: 600; cursor: pointer;" onclick="loadMoreShorts()">Load More Videos</button>
         </div>
 
     </section>
@@ -683,14 +689,95 @@
                                 }));
                                 renderYouTubeCards(items);
                             } else {
-                                grid.innerHTML = '<div class="loader">Unable to load YouTube videos. Please try again later.</div>';
+                                // Final fallback: render manual videos with basic info
+                                renderManualVideosFallback();
                             }
                         })
                         .catch(err2 => {
                             console.error("Backend YouTube API also failed:", err2);
-                            grid.innerHTML = '<div class="loader">Unable to load YouTube videos. Please try again later.</div>';
+                            // Final fallback: render manual videos with basic info
+                            renderManualVideosFallback();
                         });
                 });
+
+            // Final fallback: render manual videos with placeholder data when both APIs fail
+            function renderManualVideosFallback() {
+                console.log('[YouTube] Using manual fallback for', videoIds.length, 'videos');
+                videoIds.forEach(videoId => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `
+                        <div class="card-thumb">
+                            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='360' height='202'><rect fill='%23222' width='100%' height='100%'/><text x='50%' y='50%' fill='%23888' font-family='sans-serif' font-size='14' text-anchor='middle'>Loading...</text></svg>" alt="thumbnail" loading="lazy">
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">YouTube Video</div>
+                            <div class="card-creator">Omari.to</div>
+                            <div class="card-stats">
+                                <span>👁 —</span>
+                                <span>❤ —</span>
+                            </div>
+                        </div>
+                        <div class="card-overlay">
+                            <div class="ov-title">STATISTICS</div>
+                            <div class="ov-row"><span>Views</span><span>—</span></div>
+                            <div class="ov-row"><span>Likes</span><span>—</span></div>
+                            <div class="ov-row"><span>Comments</span><span>—</span></div>
+                            <div class="ov-row"><span>Duration</span><span>—</span></div>
+                            <div class="ov-play">▶ Watch Now</div>
+                        </div>
+                    `;
+                    card.onclick = () => {
+                        window.location.href = `/Codes/player.html?type=youtube&id=${encodeURIComponent(videoId)}`;
+                    };
+                    grid.appendChild(card);
+                });
+                // Try to fetch thumbnails asynchronously for manual fallback cards
+                fetchManualThumbnails(videoIds);
+            }
+
+            // Fetch thumbnails for manual fallback cards
+            async function fetchManualThumbnails(ids) {
+                try {
+                    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${ids.join(',')}&key=${API_KEY}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.items) {
+                            data.items.forEach(item => {
+                                const card = grid.querySelector(`[onclick*="${item.id}"]`);
+                                if (card) {
+                                    const thumb = item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url;
+                                    const img = card.querySelector('.card-thumb img');
+                                    if (img && thumb) img.src = thumb;
+                                    const titleEl = card.querySelector('.card-title');
+                                    if (titleEl) titleEl.textContent = item.snippet.title;
+                                    const duration = parseISO8601Duration(item.contentDetails?.duration);
+                                    const badge = card.querySelector('.duration-badge');
+                                    if (badge && duration) badge.textContent = formatDuration(duration);
+                                    const views = Number(item.statistics?.viewCount || 0);
+                                    const likes = Number(item.statistics?.likeCount || 0);
+                                    const comments = Number(item.statistics?.commentCount || 0);
+                                    const statsEl = card.querySelector('.card-stats');
+                                    if (statsEl) statsEl.innerHTML = `<span>👁 ${formatStat(views)}</span><span>❤ ${formatStat(likes)}</span>`;
+                                    const overlay = card.querySelector('.card-overlay');
+                                    if (overlay) {
+                                        overlay.innerHTML = `
+                                            <div class="ov-title">STATISTICS</div>
+                                            <div class="ov-row"><span>Views</span><span>${formatStat(views)}</span></div>
+                                            <div class="ov-row"><span>Likes</span><span>${formatStat(likes)}</span></div>
+                                            <div class="ov-row"><span>Comments</span><span>${comments ? formatStat(comments) : "—"}</span></div>
+                                            <div class="ov-row"><span>Duration</span><span>${formatDuration(duration) || "—"}</span></div>
+                                            <div class="ov-play">▶ Watch Now</div>
+                                        `;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.log('[YouTube] Manual thumbnail fetch failed:', e.message);
+                }
+            }
         }
 
         // ==================== SHORTS TAB (TikTok Videos) ====================
@@ -900,7 +987,7 @@
 
             currentPage++;
 
-            // Setup infinite scroll observer on first load
+            // Setup infinite scroll observer on first load (attach immediately after first render)
             if (currentPage === 2 && !window._scrollObserver) {
                 window._scrollObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
@@ -916,16 +1003,74 @@
                     window._scrollObserver.observe(sentinel);
                     console.log('[InfiniteScroll] Observer attached to sentinel');
                 }
+            } else if (currentPage > 2 && window._scrollObserver) {
+                // Observer already attached, ensure it's still observing
+                const sentinel = document.getElementById('scrollSentinel');
+                if (sentinel) {
+                    window._scrollObserver.observe(sentinel);
+                }
             }
 
             // Show/hide loader based on hasMore state
             if (!hasMoreVideos) {
                 shortsLoader.innerText = shortsGrid.children.length > 0 ? '' : shortsLoader.innerText;
                 shortsLoader.style.display = shortsGrid.children.length > 0 ? 'none' : 'block';
+                // Hide load more button when no more videos
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
             } else {
                 shortsLoader.style.display = 'block';
+                // Show load more button as fallback for infinite scroll
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                if (loadMoreBtn) loadMoreBtn.style.display = 'block';
             }
         }
+
+        // Manual load more function (fallback for infinite scroll)
+        window.loadMoreShorts = function() {
+            const btn = document.getElementById('loadMoreBtn');
+            if (btn) btn.disabled = true;
+            showShorts({ target: document.getElementById("shortsBtn") });
+            setTimeout(() => {
+                if (btn) btn.disabled = false;
+            }, 1000);
+        };
+
+        // Trigger manual TikTok sync
+        window.triggerTikTokSync = async function() {
+            const btn = document.getElementById('refreshShortsBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+            }
+            try {
+                const res = await fetch(`${API_BASE}/tiktok-sync/trigger`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-check"></i> Synced!';
+                    // Reload the first page of shorts after sync
+                    setTimeout(() => {
+                        currentPage = 1;
+                        hasMoreVideos = true;
+                        shortsGrid.innerHTML = '';
+                        shortsLoader.innerText = 'Loading fresh videos...';
+                        showShorts({ target: document.getElementById("shortsBtn") });
+                    }, 3000); // Wait for sync to complete
+                } else {
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Failed';
+                }
+            } catch (err) {
+                console.error('Sync trigger error:', err);
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
+            } finally {
+                setTimeout(() => {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-sync"></i> Refresh';
+                    }
+                }, 5000);
+            }
+        };
 
         // DEFAULT LOAD: creator filter ho toh Shorts tab (TikTok videos), warna Videos tab (YouTube)
         if (hasCreatorFilter) {

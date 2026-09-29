@@ -27,12 +27,13 @@ function parseExpiry(url) {
 
 /**
  * true when the stored thumbnail is still usable for at least minHours.
- * URLs without x-expires are treated as non-expiring.
+ * TikTok CDN URLs are signed, IP-bound, and can return 403 even before timestamp expiry.
+ * We only trust URLs with explicit x-expires; URLs without it are treated as potentially expired.
  */
 function isUsable(url, minHours = 1) {
     if (!url || !/^https?:\/\//.test(url)) return false;
     const exp = parseExpiry(url);
-    if (exp === null) return true;
+    if (exp === null) return false; // No explicit expiry = don't trust
     return exp > Math.floor(Date.now() / 1000) + minHours * 3600;
 }
 

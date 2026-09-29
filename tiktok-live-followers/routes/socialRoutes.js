@@ -254,6 +254,33 @@ router.post("/omari-ranking/update", async (req, res) => {
 });
 
 // =======================
+// POST /tiktok-sync/trigger
+// Manually trigger TikTok video sync (for admin/refresh button)
+// =======================
+router.post("/tiktok-sync/trigger", async (req, res) => {
+    try {
+        const { spawn } = require("child_process");
+        const syncProcess = spawn("node", ["scripts/syncVideos.js"], {
+            cwd: __dirname + "/..",
+            stdio: "inherit"
+        });
+        
+        syncProcess.on("close", (code) => {
+            if (code === 0) {
+                console.log("[Manual Sync] Completed successfully");
+            } else {
+                console.error("[Manual Sync] Failed with code:", code);
+            }
+        });
+        
+        res.json({ success: true, message: "Sync triggered in background" });
+    } catch (err) {
+        console.error("POST /tiktok-sync/trigger error:", err);
+        res.status(500).json({ success: false, error: "Failed to trigger sync" });
+    }
+});
+
+// =======================
 // GET /omari-videos
 // Paginated video list for @omari.to
 // =======================
@@ -295,8 +322,9 @@ router.get("/omari-videos", async (req, res) => {
 
 // =======================
 // GET /tiktok-thumbnail
-// Proxy / redirect to a valid thumbnail image
-// Uses thumbnailService for robust fallback chain: stored URL -> oEmbed -> page scrape
+// Proxy thumbnail image (fetch server-side and serve to client)
+// TikTok CDN URLs are signed, IP-bound, and expire - redirecting doesn't work reliably
+// Uses thumbnailService fallback chain: tikwm API -> oEmbed -> page scrape -> stored URL
 // =======================
 router.get("/tiktok-thumbnail", async (req, res) => {
     try {
@@ -316,41 +344,100 @@ router.get("/tiktok-thumbnail", async (req, res) => {
             return res.redirect("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4xMkMEa+kAAAANSURBVBhXY2BgYPgPAAEEAQB9IGQNAAAAAElFTkSuQmCC");
         }
 
-        const thumb = doc.thumbnail || "";
+        const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+        const axios = require("axios");
 
-        // Check if the stored thumbnail URL is still usable
-        if (isUsable(thumb)) {
-            return res.redirect(thumb);
-        }
+        // Build list of thumbnail URLs to try (in order of preference)
+        const urlsToTry = [];
 
-        // Stored URL expired or unusable — try to get fresh thumbnail
+        // 1. Try fresh thumbnail from tikwm API first (most reliable)
         if (doc.webVideoUrl) {
             try {
-                console.log("[tiktok-thumbnail] Fetching fresh thumbnail for:", doc.videoId);
-                const freshThumb = await fetchFreshThumbnail(doc.webVideoUrl);
-                
-                if (freshThumb) {
-                    // Update the stored thumbnail for next time
-                    Video.updateOne(
-                        { videoId: doc.videoId },
-                        { $set: { thumbnail: freshThumb } }
-                    ).catch(() => { });
-                    return res.redirect(freshThumb);
+                console.log("[tiktok-thumbnail] Fetching fresh thumbnail via tikwm for:", doc.videoId);
+                const { data } = await axios.get("https://www.tikwm.com/api/", {
+                    params: { url: doc.webVideoUrl },
+                    headers: { "User-Agent": BROWSER_UA },
+                    timeout: 10000
+                });
+                if (data && data.code === 0 && data.data) {
+                    // Prefer origin_cover (full quality), then cover
+                    if (data.data.origin_cover) urlsToTry.push(data.data.origin_cover);
+                    if (data.data.cover) urlsToTry.push(data.data.cover);
+                    if (data.data.ai_dynamic_cover) urlsToTry.push(data.data.ai_dynamic_cover);
                 }
             } catch (e) {
-                console.error("[tiktok-thumbnail] Thumbnail refresh failed:", e.message);
+                console.log("[tiktok-thumbnail] tikwm API failed:", e.message);
             }
         }
 
-        // If stored URL exists but is expired, still try it as last resort
-        if (thumb) {
-            console.log("[tiktok-thumbnail] Using expired URL as fallback:", thumb.substring(0, 60));
-            return res.redirect(thumb);
+        // 2. Try oEmbed
+        if (doc.webVideoUrl) {
+            try {
+                const { data } = await axios.get("https://www.tiktok.com/oembed", {
+                    params: { url: doc.webVideoUrl },
+                    headers: { "User-Agent": BROWSER_UA },
+                    timeout: 10000
+                });
+                if (data && data.thumbnail_url) urlsToTry.push(data.thumbnail_url);
+            } catch (e) {
+                console.log("[tiktok-thumbnail] oEmbed failed:", e.message);
+            }
         }
 
-        // Final fallback: transparent pixel
-        console.log("[tiktok-thumbnail] No thumbnail available, using transparent fallback");
+        // 3. Try stored thumbnail URL (may be expired but worth trying)
+        if (doc.thumbnail) urlsToTry.push(doc.thumbnail);
+
+        // Try each URL, proxy the first one that works
+        for (const url of urlsToTry) {
+            try {
+                console.log("[tiktok-thumbnail] Trying:", url.substring(0, 80));
+                const response = await axios.get(url, {
+                    responseType: "stream",
+                    headers: {
+                        "User-Agent": BROWSER_UA,
+                        "Referer": "https://www.tiktok.com/",
+                        "Origin": "https://www.tiktok.com"
+                    },
+                    timeout: 15000,
+                    maxContentLength: 5 * 1024 * 1024, // 5MB max
+                    maxBodyLength: 5 * 1024 * 1024
+                });
+
+                // Success - proxy the image
+                res.set({
+                    "Content-Type": response.headers["content-type"] || "image/webp",
+                    "Content-Length": response.headers["content-length"],
+                    "Cache-Control": "public, max-age=86400", // Cache for 24 hours
+                    "Access-Control-Allow-Origin": "*"
+                });
+
+                response.data.pipe(res);
+                
+                response.data.on("error", (err) => {
+                    console.error("[tiktok-thumbnail] Stream error:", err.message);
+                    if (!res.headersSent) res.status(500).end();
+                });
+
+                // Update stored thumbnail in background (non-blocking)
+                if (url !== doc.thumbnail) {
+                    Video.updateOne(
+                        { videoId: doc.videoId },
+                        { $set: { thumbnail: url } }
+                    ).catch(() => { });
+                }
+
+                return; // Success, exit the function
+
+            } catch (e) {
+                console.log("[tiktok-thumbnail] Failed:", url.substring(0, 80), "-", e.message);
+                // Try next URL
+            }
+        }
+
+        // All URLs failed - return transparent pixel
+        console.log("[tiktok-thumbnail] All sources failed for:", doc.videoId);
         res.redirect("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4xMkMEa+kAAAANSURBVBhXY2BgYPgPAAEEAQB9IGQNAAAAAElFTkSuQmCC");
+
     } catch (err) {
         console.error("GET /tiktok-thumbnail error:", err);
         res.status(500).send("Thumbnail error");
@@ -951,33 +1038,26 @@ router.get("/notifications", async (req, res) => {
 
 // =======================
 // GET /latest-videos
-// Returns latest 10 videos (TikTok + YouTube combined) for About page
+// Returns latest 10 OFFICIAL OMARI videos (TikTok @omari.to ONLY) for About page
 // =======================
 router.get("/latest-videos", async (req, res) => {
     try {
-        const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
+        const limit = Math.min(10, Math.max(1, parseInt(req.query.limit) || 10));
         
+        // Only fetch from official Omari.to TikTok account - NO YouTube, NO other creators
+        // Match platform: "tiktok" OR platform doesn't exist (backward compat)
         const tiktokMatch = {
             isActive: true,
-            platform: "tiktok",
-            $or: ALLOWED_USERNAMES.map(u => ({ webVideoUrl: handleRegex(u) }))
+            $or: [
+                { platform: "tiktok" },
+                { platform: { $exists: false } }
+            ],
+            webVideoUrl: handleRegex("omari.to")
         };
         
-        const youtubeMatch = {
-            isActive: true,
-            platform: "youtube"
-        };
+        const tiktokDocs = await Video.find(tiktokMatch).sort({ createTime: -1 }).limit(limit).lean();
         
-        const [tiktokDocs, youtubeDocs] = await Promise.all([
-            Video.find(tiktokMatch).sort({ createTime: -1 }).limit(limit).lean(),
-            Video.find(youtubeMatch).sort({ createTime: -1 }).limit(limit).lean()
-        ]);
-        
-        const allDocs = [...tiktokDocs, ...youtubeDocs]
-            .sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
-            .slice(0, limit);
-        
-        const videos = allDocs.map(mapVideoDoc);
+        const videos = tiktokDocs.map(mapVideoDoc);
         
         res.json({ success: true, videos });
     } catch (err) {

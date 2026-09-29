@@ -9,8 +9,8 @@ let isSyncRunning = false;
 let isPlaylistSyncRunning = false;
 let isAccountStatsRefreshRunning = false;
 
-// Configurable sync interval from .env (default 15 minutes)
-const SYNC_INTERVAL_MINUTES = parseInt(process.env.TIKTOK_SYNC_INTERVAL_MINUTES || "15", 10);
+// Configurable sync interval from .env (default 5 minutes)
+const SYNC_INTERVAL_MINUTES = parseInt(process.env.TIKTOK_SYNC_INTERVAL_MINUTES || "5", 10);
 const SYNC_CRON_PATTERN = `*/${SYNC_INTERVAL_MINUTES} * * * *`;
 
 console.log(`📅 TikTok video sync interval: ${SYNC_INTERVAL_MINUTES} minutes`);
@@ -101,27 +101,22 @@ cron.schedule("30 */6 * * *", () => {
   });
 });
 
-// Optional initial sync on startup (configurable)
-// Disabled by default to prevent startup issues
-if (process.env.RUN_INITIAL_SYNC === "true") {
-  console.log("🚀 Running initial sync on startup...");
-  setTimeout(() => {
-    if (!isSyncRunning) {
-      isSyncRunning = true;
-      exec("node scripts/syncVideos.js", (error, stdout, stderr) => {
-        isSyncRunning = false;
-        if (error) {
-          console.error("❌ Initial sync error:", error);
-        } else {
-          console.log("✅ Initial sync completed");
-          if (stdout) console.log(stdout.trim());
-        }
-      });
-    }
-  }, 5000);
-} else {
-  console.log("ℹ️ Initial sync disabled. Set RUN_INITIAL_SYNC=true to enable.");
-}
+// Initial sync on startup (enabled by default)
+console.log("🚀 Running initial sync on startup...");
+setTimeout(() => {
+  if (!isSyncRunning) {
+    isSyncRunning = true;
+    exec("node scripts/syncVideos.js", (error, stdout, stderr) => {
+      isSyncRunning = false;
+      if (error) {
+        console.error("❌ Initial sync error:", error);
+      } else {
+        console.log("✅ Initial sync completed");
+        if (stdout) console.log(stdout.trim());
+      }
+    });
+  }
+}, 5000);
 
 // Rankings refresh (configurable interval, default 6 hours)
 const RANKINGS_REFRESH_HOURS = parseInt(process.env.RANKINGS_REFRESH_INTERVAL_HOURS || "6", 10);

@@ -57,10 +57,10 @@ async function loadRankingsFromDB() {
         const world = map["tiktok_world"] ? map["tiktok_world"].rank : null;
         const kazakhstan = map["tiktok_kazakhstan"] ? map["tiktok_kazakhstan"].rank : null;
 
-        // Only load if we have valid data from a real provider (not seed values)
-        const hasRealData = (asia !== null && map["tiktok_asia"]?.source === "provider") ||
-                           (world !== null && map["tiktok_world"]?.source === "provider") ||
-                           (kazakhstan !== null && map["tiktok_kazakhstan"]?.source === "provider");
+        // Load if we have valid data from a real provider OR manually verified admin entry
+        const hasRealData = (asia !== null && (map["tiktok_asia"]?.source === "provider" || map["tiktok_asia"]?.source === "admin")) ||
+                           (world !== null && (map["tiktok_world"]?.source === "provider" || map["tiktok_world"]?.source === "admin")) ||
+                           (kazakhstan !== null && (map["tiktok_kazakhstan"]?.source === "provider" || map["tiktok_kazakhstan"]?.source === "admin"));
 
         if (hasRealData) {
             rankingCache = {
@@ -68,9 +68,9 @@ async function loadRankingsFromDB() {
                 rankings: { asia, world, kazakhstan },
                 lastUpdated: new Date()
             };
-            console.log("[rankings] Loaded real provider data from DB:", rankingCache.rankings);
+            console.log("[rankings] Loaded verified data from DB:", rankingCache.rankings);
         } else {
-            console.log("[rankings] No real provider data in DB (only seed/admin values)");
+            console.log("[rankings] No verified data in DB");
             rankingCache.loaded = false;
         }
         return rankingCache;

@@ -9,14 +9,35 @@
     <link rel="stylesheet" href="/Codes/style.css">
     <link rel="icon" href="/Public/Images/Logo.png">
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Local font fallbacks (loaded first) -->
+    <link rel="preload" href="/Codes/vendor/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/Codes/vendor/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/Codes/vendor/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+
+    <!-- External resources with local fallbacks -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500&display=swap" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/Codes/vendor/css/fontawesome.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/Codes/vendor/css/toastify.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/Codes/vendor/css/leaflet.min.css" media="print" onload="this.media='all'">
+
+    <!-- JavaScript with local fallbacks -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js" onerror="loadLocalScript('/Codes/vendor/js/toastify.min.js')"></script>
+    <script src="/Codes/vendor/js/toastify.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="loadLocalScript('/Codes/vendor/js/leaflet.min.js')"></script>
+    <script src="/Codes/vendor/js/leaflet.min.js"></script>
+
+    <script>
+        function loadLocalScript(src) {
+            if (!document.querySelector('script[src="' + src + '"]')) {
+                var s = document.createElement('script');
+                s.src = src;
+                document.head.appendChild(s);
+            }
+        }
+    </script>
 
 </head>
 
@@ -1123,8 +1144,17 @@
             <h2>OMARI.TO</h2>
             <p class="omari-social-subtitle">Latest 10 Videos</p>
         </div>
-        <div class="omari-social-grid" id="omariSocialGrid">
-            <!-- Populated dynamically from site data - Latest 10 videos (TikTok + YouTube) -->
+        <div class="omari-carousel">
+            <button class="omari-carousel-nav prev" aria-label="Previous video" tabindex="0">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="omari-carousel-track" id="omariSocialGrid">
+                <!-- Populated dynamically from site data - Latest 10 videos (TikTok + YouTube) -->
+            </div>
+            <button class="omari-carousel-nav next" aria-label="Next video" tabindex="0">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="omari-carousel-dots"></div>
         </div>
         <div class="omari-social-footer">
             <a href="/Codes/videos.html" class="omari-social-link">
@@ -1392,21 +1422,16 @@
                         const el = document.getElementById(id);
                         if (el) el.textContent = (val !== null && val !== undefined)
                             ? '#' + val
-                            : (data.message || 'Rank unavailable');
+                            : 'Rank unavailable';
                     };
                     if (data && data.rankings) {
                         set('asiaRank',        data.rankings.asia);
                         set('worldRank',       data.rankings.world);
                         set('kzRank',          data.rankings.kazakhstan);
+                        if (data.lastUpdated) console.log('[Rankings] Last updated:', data.lastUpdated);
                     } else {
-                        const message = data.message || 'Rank unavailable';
-                        ['asiaRank', 'worldRank', 'kzRank'].forEach(id => {
-                            const el = document.getElementById(id);
-                            if (el) el.textContent = message;
-                        });
-                    }
-                    if (data && data.lastUpdated) {
-                        console.log('[Rankings] Last updated:', data.lastUpdated);
+                        if (data.message) console.log('[Rankings]', data.message);
+                        ['asiaRank', 'worldRank', 'kzRank'].forEach(set);
                     }
                 })
                 .catch(err => {
@@ -1420,5 +1445,6 @@
     </script>
 </body>
 </html>
+
 
 

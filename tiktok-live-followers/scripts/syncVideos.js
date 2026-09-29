@@ -116,7 +116,7 @@ async function connectDB() {
     console.log("✅ MongoDB Connected");
 }
 
-async function fetchVideosBySearch(handle, limit = 50) {
+async function fetchVideosBySearch(handle, limit = 100) {
     if (!APIFY_TOKEN) {
         console.log("[Apify] APIFY_TOKEN not configured, skipping");
         return [];
@@ -126,6 +126,7 @@ async function fetchVideosBySearch(handle, limit = 50) {
         console.log(`[Apify] Searching TikTok videos for @${handle}...`);
         
         // Use searchQueries mode which returns more recent videos than profiles mode
+        // Increased limit to 100 to catch more recent videos
         const runResponse = await axios.post(
             `https://api.apify.com/v2/acts/${TIKTOK_SCRAPER_ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
             {
@@ -133,7 +134,7 @@ async function fetchVideosBySearch(handle, limit = 50) {
                 resultsLimit: limit
             },
             {
-                timeout: 30000,
+                timeout: 60000,
                 headers: { "Content-Type": "application/json" }
             }
         );
@@ -155,7 +156,7 @@ async function fetchVideosBySearch(handle, limit = 50) {
             if (status === "SUCCEEDED") {
                 // Get results
                 const dataset = await axios.get(
-                    `https://api.apify.com/v2/datasets/${runStatus.data.data.defaultDatasetId}/items?token=${APIFY_TOKEN}&limit=${limit}`
+                    `https://api.apify.com/v2/datasets/${runStatus.data.data.defaultDatasetId}/items?token=${APIFY_TOKEN}&limit=${limit * 2}`
                 );
                 
                 const items = dataset.data;
@@ -199,15 +200,15 @@ async function fetchVideosByProfile(handle) {
     try {
         console.log(`[Apify] Fetching TikTok profile videos for @${handle}...`);
         
-        // Use profiles mode as fallback
+        // Use profiles mode as fallback - increased limit to 50
         const runResponse = await axios.post(
             `https://api.apify.com/v2/acts/${TIKTOK_SCRAPER_ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
             {
                 profiles: [handle],
-                resultsLimit: 10
+                resultsLimit: 50
             },
             {
-                timeout: 30000,
+                timeout: 60000,
                 headers: { "Content-Type": "application/json" }
             }
         );
@@ -227,7 +228,7 @@ async function fetchVideosByProfile(handle) {
             
             if (status === "SUCCEEDED") {
                 const dataset = await axios.get(
-                    `https://api.apify.com/v2/datasets/${runStatus.data.data.defaultDatasetId}/items?token=${APIFY_TOKEN}&limit=10`
+                    `https://api.apify.com/v2/datasets/${runStatus.data.data.defaultDatasetId}/items?token=${APIFY_TOKEN}&limit=100`
                 );
                 
                 const items = dataset.data;
